@@ -42,6 +42,10 @@
 #include <mach/board_lge.h>
 #endif
 
+#ifdef CONFIG_KEXEC_HARDBOOT
+#include <asm/kexec.h>
+#endif
+
 #define WDT0_RST	0x38
 #define WDT0_EN		0x40
 #define WDT0_BARK_TIME	0x4C
@@ -357,6 +361,18 @@ void msm_restart(char mode, const char *cmd)
 	printk(KERN_ERR "Restarting has failed\n");
 }
 
+#ifdef CONFIG_KEXEC_HARDBOOT
+void msm_kexec_hardboot(void)
+{
+	/* Set PM8XXX PMIC to reset on power off. */
+	pm8xxx_reset_pwr_off(1);
+
+	/* Reboot with the recovery kernel since the boot kernel decompressor may
+	 * not support the hardboot jump. */
+	__raw_writel(0x77665502, restart_reason);
+}
+#endif
+
 static int __init msm_pmic_restart_init(void)
 {
 	int rc;
@@ -401,7 +417,9 @@ static int __init msm_restart_init(void)
 
 	if (scm_is_call_available(SCM_SVC_PWR, SCM_IO_DISABLE_PMIC_ARBITER) > 0)
 		scm_pmic_arbiter_disable_supported = true;
-
+#ifdef CONFIG_KEXEC_HARDBOOT
+	kexec_hardboot_hook = msm_kexec_hardboot;
+#endif
 	return 0;
 }
 early_initcall(msm_restart_init);

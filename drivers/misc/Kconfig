@@ -540,7 +540,6 @@ config TSIF_CHRDEV
 	  from this device.
 
 	  This driver may be used as example for TSIF API usage.
-
 	  To compile this driver as module, choose M here: the
 	  module will be called tsif_chrdev.
 
@@ -605,6 +604,10 @@ config PMIC8XXX_VIBRATOR
 config TSPDRV
     bool "tspdrv"
         default n
+
+config TSPDRV_PMIC_VIBRATOR
+    bool "pmic vibrator suppert"
+	    default n
 
 config LGE_SM100
     bool "lge sm100 vibrator support"

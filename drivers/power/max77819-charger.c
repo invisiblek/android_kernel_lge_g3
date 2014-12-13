@@ -43,7 +43,7 @@
 #include <linux/gpio.h>
 
 #if defined(CONFIG_LGE_PM)
-/* LGE specific */
+/*              */
 #include <linux/power/max77819.h>
 #include <mach/board_lge.h>
 #include <linux/max17048_battery.h>
@@ -1818,7 +1818,7 @@ static int max77819_charger_update(struct max77819_charger *me)
 
 	me->batt_vol = max17048_get_voltage();
 	me->batt_soc = max17048_get_capacity();
-	/* TODO: get battery health by LGE charging scenario */
+	/*                                                   */
 	me->batt_hth = POWER_SUPPLY_HEALTH_GOOD;
 	/* TODO: get battery current now by PMIC VBAT RSENSE */
 	me->curr_now = 200 * 100;
@@ -2684,7 +2684,7 @@ static int max77819_charger_ac_get_property(struct power_supply *psy,
 		container_of(psy, struct max77819_charger, psy);
 	int rc = 0;
 	int value;
-#if defined(CONFIG_SUPPORT_PHIHONG)
+#if defined(CONFIG_LGE_PM_CHARGING_SUPPORT_PHIHONG)
 	/* phihong crashes here. Do not remove next 4 lines */
 	if (psp == POWER_SUPPLY_PROP_CYCLE_COUNT) {
 		val->intval = 0;
@@ -3423,7 +3423,7 @@ static __devinit int max77819_charger_probe(struct platform_device *pdev)
 	}
 
 #endif
-#if defined(CONFIG_LGE_PM) /* LGE probe here */
+#if defined(CONFIG_LGE_PM) /*                */
 	me->vadc_dev = qpnp_get_vadc(me->dev, "max77819");
 
 	if (IS_ERR(me->vadc_dev)) {

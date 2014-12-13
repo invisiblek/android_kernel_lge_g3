@@ -49,6 +49,7 @@ enum {
 	POWER_SUPPLY_CHARGE_TYPE_NONE,
 	POWER_SUPPLY_CHARGE_TYPE_TRICKLE,
 	POWER_SUPPLY_CHARGE_TYPE_FAST,
+	POWER_SUPPLY_CHARGE_TYPE_TAPER,
 };
 
 enum {
@@ -110,6 +111,7 @@ enum power_supply_property {
 	POWER_SUPPLY_PROP_INPUT_CURRENT_MAX,
 	POWER_SUPPLY_PROP_INPUT_CURRENT_TRIM,
 	POWER_SUPPLY_PROP_INPUT_CURRENT_SETTLED,
+	POWER_SUPPLY_PROP_VCHG_LOOP_DBC_BYPASS,
 	POWER_SUPPLY_PROP_CURRENT_NOW,
 	POWER_SUPPLY_PROP_CURRENT_AVG,
 	POWER_SUPPLY_PROP_POWER_NOW,
@@ -168,7 +170,7 @@ enum power_supply_property {
 #endif
 #endif
 #endif
-#if defined(CONFIG_LGE_PM_VZW_LLK)
+#if defined(CONFIG_LGE_PM_LLK_MODE)
 	POWER_SUPPLY_PROP_STORE_DEMO_ENABLED,
 #endif
 	/* Properties of type `const char *' */
@@ -199,6 +201,7 @@ enum power_supply_event_type {
 #endif
 #ifdef CONFIG_LGE_PM
 	POWER_SUPPLY_PROP_FLOATED_CHARGER,
+	POWER_SUPPLY_PROP_DRIVER_UNINSTALL,
 #endif
 };
 
@@ -272,6 +275,7 @@ struct power_supply {
 #endif
 #ifdef CONFIG_LGE_PM
 	int is_floated_charger;
+	int is_usb_driver_uninstall;
 #endif
 };
 
@@ -297,12 +301,14 @@ struct power_supply_info {
 #if defined(CONFIG_POWER_SUPPLY) || defined(CONFIG_POWER_SUPPLY_MODULE)
 #ifdef CONFIG_LGE_PM
 int power_supply_set_floated_charger(struct power_supply *psy, int is_float);
+int power_supply_set_usb_driver_uninstall(struct power_supply *psy, int is_float);
 #endif
 extern struct power_supply *power_supply_get_by_name(char *name);
 extern void power_supply_changed(struct power_supply *psy);
 extern int power_supply_am_i_supplied(struct power_supply *psy);
 extern int power_supply_set_battery_charged(struct power_supply *psy);
 extern int power_supply_set_current_limit(struct power_supply *psy, int limit);
+extern int power_supply_set_voltage_limit(struct power_supply *psy, int limit);
 extern int power_supply_set_online(struct power_supply *psy, bool enable);
 extern int power_supply_set_health_state(struct power_supply *psy, int health);
 extern int power_supply_set_present(struct power_supply *psy, bool enable);
@@ -322,6 +328,9 @@ static inline void power_supply_changed(struct power_supply *psy) { }
 static inline int power_supply_am_i_supplied(struct power_supply *psy)
 							{ return -ENOSYS; }
 static inline int power_supply_set_battery_charged(struct power_supply *psy)
+							{ return -ENOSYS; }
+static inline int power_supply_set_voltage_limit(struct power_supply *psy,
+							int limit)
 							{ return -ENOSYS; }
 static inline int power_supply_set_current_limit(struct power_supply *psy,
 							int limit)

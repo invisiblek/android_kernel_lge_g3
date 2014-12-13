@@ -114,9 +114,9 @@ static int read_initset(unsigned long tmp)
 static int write_initset(unsigned long tmp)
 {
 	struct tuning_init *wbuf = (struct tuning_init *)tmp;
-	int i=0;
+	int i = 0;
 #if TUNING_DBG
-	int j=0, k=0;
+	int j = 0, k = 0;
 #endif
 	int data_offset;
 
@@ -134,7 +134,7 @@ static int write_initset(unsigned long tmp)
 		return -EFAULT;
 	}
 
-	printk("%s: num_cmds: %d\n", __func__, num_cmds);
+	pr_info("%s: num_cmds: %d\n", __func__, num_cmds);
 	tun_dsi_panel_on_cmds =
 		kzalloc((num_cmds * sizeof(struct dsi_cmd_desc)), GFP_KERNEL);
 	if (!tun_dsi_panel_on_cmds) {
@@ -145,20 +145,20 @@ static int write_initset(unsigned long tmp)
 	data_offset = 0;
 
 #if TUNING_DBG
-	printk("========================\n");
-	while(i < sizeof(wbuf->buf)) {
-		printk("%x ", init_buf[i]);
+	pr_info("========================\n");
+	while (i < sizeof(wbuf->buf)) {
+		pr_info("%x ", init_buf[i]);
 		j++;
-		if(j == wbuf->size[k]) {
-			printk("\n");
+		if (j == wbuf->size[k]) {
+			pr_info("\n");
 			j = 0;
 			k++;
 		}
-		if(k == wbuf->numcmds)
+		if (k == wbuf->numcmds)
 			break;
 		i++;
 	}
-	printk("========================\n");
+	pr_info("========================\n");
 #endif
 
 	for (i = 0; i < num_cmds; i++) {
@@ -177,7 +177,7 @@ static int write_initset(unsigned long tmp)
 
 #if TUNING_DBG
 	for (i = 0; i < num_cmds; i++) {
-		printk("%dth data <%x, %x, %x, %x, %x, %d, %x...>\n",
+		pr_info("%dth data <%x, %x, %x, %x, %x, %d, %x...>\n",
 				i+1,
 				tun_dsi_panel_on_cmds[i].dchdr.dtype,
 				tun_dsi_panel_on_cmds[i].dchdr.last,

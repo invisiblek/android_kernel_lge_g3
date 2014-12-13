@@ -227,7 +227,7 @@ struct backlight_device *get_backlight_device()
 	if (dev) {
 		bd = to_backlight_device(dev);
 		pr_info("%s: backlight device name is %s", __func__,
-						(bd)?bd->dev.kobj.name:"NULL");
+						(bd) ? bd->dev.kobj.name : "NULL");
 	}
 	class_dev_iter_exit(&iter);
 	return bd;

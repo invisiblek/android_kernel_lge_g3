@@ -190,8 +190,7 @@ void lm3697_lcd_backlight_set_level(int level)
 	int cal_level;
 #endif
 
-	if(lm3697_device == NULL)
-	{
+	if (lm3697_device == NULL) {
 		pr_err("%s : lm3697 is not registered\n", __func__);
 		return;
 	}
@@ -200,8 +199,8 @@ void lm3697_lcd_backlight_set_level(int level)
 #ifdef CONFIG_MACH_LGE
 	pdata = lm3697_bl->bl_pdata;
 
-	if(lge_get_boot_mode() == LGE_BOOT_MODE_FACTORY){
-		pr_info("%s : factory mode! Will not turn on backlight.\n",__func__);
+	if (lge_get_boot_mode() == LGE_BOOT_MODE_FACTORY) {
+		pr_info("%s : factory mode! Will not turn on backlight.\n", __func__);
 		level = 0;
 	}
 #ifdef CONFIG_MACH_LGE_BACKLIGHT_SUPPORT
@@ -225,16 +224,15 @@ void lm3697_lcd_backlight_set_level(int level)
 	if (level >= pdata->blmap_size)
 		level = pdata->blmap_size - 1;
 
-	if(pdata->blmap)
+	if (pdata->blmap)
 		cal_level = pdata->blmap[level];
 	else
 		cal_level = level;
 
-	if(cal_level == cur_main_lcd_level)
+	if (cal_level == cur_main_lcd_level)
 		return;
 
-	pr_info("%s: backlight level from table %d -> %d\n",__func__, level, cal_level);
-
+	pr_info("%s: backlight level from table %d -> %d\n", __func__, level, cal_level);
 	ret = lm3697_bl_set_brightness(lm3697_bl, cal_level);
 #else
 	ret = lm3697_bl_set_brightness(lm3697_bl, level);
@@ -262,13 +260,13 @@ static int lm3697_bl_update_status(struct backlight_device *bl_dev)
 
 	brt = bl_dev->props.brightness;
 
-	if(brt == cur_main_lcd_level)
+	if (brt == cur_main_lcd_level)
 		return 0;
 
 	if (brt > 0) {
 		if (backlight_status == BL_OFF)
 			ret = lm3697_bl_enable(lm3697_bl, 1);
-	}else{
+	} else {
 		if (backlight_status == BL_ON)
 			ret = lm3697_bl_enable(lm3697_bl, 0);
 	}
@@ -290,19 +288,20 @@ static int lm3697_bl_update_status(struct backlight_device *bl_dev)
 }
 
 
-static void lm3697_lcd_backlight_set_level_nomapping(int level){
+static void lm3697_lcd_backlight_set_level_nomapping(int level)
+{
 	struct lm3697_bl *lm3697_bl = bl_get_data(lm3697_device);
 	int ret;
-	pr_err("%s : level is %d\n",__func__, level);
+	pr_err("%s : level is %d\n", __func__, level);
 
 	cur_main_lcd_level = level;
 
-	if(level > 2047)
+	if (level > 2047)
 		level = 2047;
 
 	ret = lm3697_bl_set_brightness(lm3697_bl, level);
-	if (ret){
-		pr_err("%s DEBUG error set backlight\n",__func__);
+	if (ret) {
+		pr_err("%s DEBUG error set backlight\n", __func__);
 	}
 };
 
@@ -379,12 +378,11 @@ static int lm3697_bl_brightness_configure(struct lm3697_bl *lm3697_bl)
 {
 	int ret;
 
-	if(lm3697_bl->bl_pdata->mapping_mode == LM3697_LINEAR){
+	if (lm3697_bl->bl_pdata->mapping_mode == LM3697_LINEAR) {
 		ret = lm3697_bl_write_byte(lm3697_bl->chip, LM3697_REG_BRT_CFG,
 				     LM3697_LINEAR);
 		pr_info("%s: set Linear Mode\n", __func__);
-	}
-	else{
+	} else {
 		ret = lm3697_bl_write_byte(lm3697_bl->chip, LM3697_REG_BRT_CFG,
 				     LM3697_EXPONENTIAL);
 		pr_info("%s: set Exponential Mode\n", __func__);
@@ -482,7 +480,7 @@ static ssize_t lcd_backlight_store_level(struct device *dev,
 {
 	int level;
 
-	if(!count)
+	if (!count)
 		return -EINVAL;
 
 	level = simple_strtoul(buf, NULL, 10);
@@ -501,7 +499,7 @@ static ssize_t show_rt_mode(struct device *dev,
 	return r;
 }
 
-static int lm3697_bl_set_current_for_retail(struct lm3697_bl *lm3697_bl, u8 imax )
+static int lm3697_bl_set_current_for_retail(struct lm3697_bl *lm3697_bl, u8 imax)
 {
 	u8 reg[] = { LM3697_REG_IMAX_A, LM3697_REG_IMAX_B, };
 
@@ -518,14 +516,14 @@ static ssize_t store_rt_mode(struct device *dev,
 	u8 imax = 0;
 	struct lm3697_bl *lm3697_bl = bl_get_data(lm3697_device);
 
-	if(!count)
+	if (!count)
 		return -EINVAL;
 
 	rt_current = simple_strtoul(buf, NULL, 10);
 
-	if(rt_current == 1)
+	if (rt_current == 1)
 		rt_current = 22;
-	else if(rt_current == 0)
+	else if (rt_current == 0)
 		rt_current = 20;
 	current_setting = rt_current;
 
@@ -534,8 +532,8 @@ static ssize_t store_rt_mode(struct device *dev,
 	return count;
 }
 
-DEVICE_ATTR(lm3697_bl_level, 0644, lcd_backlight_show_level,lcd_backlight_store_level);
-DEVICE_ATTR(lm3697_rt_mode, 0644, show_rt_mode,store_rt_mode);
+DEVICE_ATTR(lm3697_bl_level, 0644, lcd_backlight_show_level, lcd_backlight_store_level);
+DEVICE_ATTR(lm3697_rt_mode, 0644, show_rt_mode, store_rt_mode);
 
 /* This helper funcion is moved from linux-v3.9 */
 static inline int _of_get_child_count(const struct device_node *np)
@@ -559,7 +557,7 @@ static int lm3697_bl_parse_dt(struct device *dev, struct lm3697_bl_chip *chip)
 	int i = 0, j;
 	unsigned int imax_mA;
 #ifdef CONFIG_MACH_LGE
-	u32* array;
+	u32 *array;
 	u32 hvled_array[13];
 	u32 hvled_data;
 #endif
@@ -603,16 +601,16 @@ static int lm3697_bl_parse_dt(struct device *dev, struct lm3697_bl_chip *chip)
 		of_property_read_u32_array(child, "lge,hvled", hvled_array, 13);
 		hvled_data = hvled_array[lge_get_board_revno()];
 
-		switch(hvled_data) {
-			case 23:
-				bl_pdata[i].bl_string |= LM3697_HVLED1;
-				break;
-			case 12:
-			default:
-				bl_pdata[i].bl_string |= LM3697_HVLED3;
-				break;
+		switch (hvled_data) {
+		case 23:
+			bl_pdata[i].bl_string |= LM3697_HVLED1;
+			break;
+		case 12:
+		default:
+			bl_pdata[i].bl_string |= LM3697_HVLED3;
+			break;
 		}
-		pr_info("%s: hvled : %d, register[0x10] = %ld\n", __func__,hvled_data, bl_pdata[i].bl_string);
+		pr_info("%s: hvled : %d, register[0x10] = %ld\n", __func__, hvled_data, bl_pdata[i].bl_string);
 #else
 		/* Make backlight strings */
 		bl_pdata[i].bl_string = 0;
@@ -639,7 +637,7 @@ static int lm3697_bl_parse_dt(struct device *dev, struct lm3697_bl_chip *chip)
 		of_property_read_u32(child, "blmap_size",
 				&bl_pdata[i].blmap_size);
 
-		if(bl_pdata[i].blmap_size){
+		if (bl_pdata[i].blmap_size) {
 			array = kzalloc(sizeof(u32) * bl_pdata[i].blmap_size, GFP_KERNEL);
 			if (!array) {
 				pr_err("no more mem for array\n");
@@ -649,7 +647,7 @@ static int lm3697_bl_parse_dt(struct device *dev, struct lm3697_bl_chip *chip)
 			}
 			of_property_read_u32_array(child, "blmap", array, bl_pdata[i].blmap_size);
 			bl_pdata[i].blmap = kzalloc(sizeof(u16) * bl_pdata[i].blmap_size, GFP_KERNEL);
-			if (!bl_pdata[i].blmap){
+			if (!bl_pdata[i].blmap) {
 				pr_err("no more mem for blmap\n");
 				devm_kfree(dev, pdata);
 				devm_kfree(dev, bl_pdata);
@@ -754,9 +752,15 @@ static struct lm3697_bl *lm3697_bl_register(struct lm3697_bl_chip *chip)
 			goto cleanup_backlights;
 		}
 
-		if(lge_get_boot_mode() == LGE_BOOT_MODE_FACTORY){
+#ifdef CONFIG_LGE_LCD_OFF_DIMMING
+		if(lge_get_bootreason() == 0x77665560) {
+			each->bl_dev->props.brightness = 50;
+			pr_info("%s : fota reboot - backlight set 50\n", __func__);
+		}
+#endif
+		if (lge_get_boot_mode() == LGE_BOOT_MODE_FACTORY) {
 			each->bl_dev->props.brightness = 0;
-			pr_info("%s : 130K is connected \n",__func__);
+			pr_info("%s : 130K is connected \n", __func__);
 		} else {
 			backlight_status = BL_ON;
 			backlight_update_status(each->bl_dev);

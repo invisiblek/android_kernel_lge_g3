@@ -283,49 +283,23 @@ static ssize_t set_pattern(struct device *dev, struct device_attribute *attr, co
 {
 	ssize_t ret = -EINVAL;
 	int pattern_num = 0;
-	struct power_supply *chg_psy;
-	union power_supply_propval chg_online;
-#if defined(CONFIG_MACH_MSM8974_G3_KDDI_EVB) || defined(CONFIG_MACH_MSM8974_G3_KDDI)
-	union power_supply_propval usb_chg_online;
-#endif
 
 	if (sscanf(buf, "%d", &pattern_num) != 1) {
 		printk("[RGB LED] bad arguments ");
 	}
 	ret = size;
 
-	chg_psy = power_supply_get_by_name("ac");
-	if (chg_psy) {
-		chg_psy->get_property(chg_psy, POWER_SUPPLY_PROP_PRESENT, &chg_online);
-	} else {
-		printk("[RGB LED] Cannot get power supply property.\n");
-		chg_online.intval = 0;
-	}
-#if defined(CONFIG_MACH_MSM8974_G3_KDDI_EVB) || defined(CONFIG_MACH_MSM8974_G3_KDDI)
-	chg_psy = power_supply_get_by_name("usb");
-	if (chg_psy) {
-		chg_psy->get_property(chg_psy, POWER_SUPPLY_PROP_PRESENT, &usb_chg_online);
-	} else {
-		printk("[RGB LED] Cannot get (USB) power supply property.\n");
-		usb_chg_online.intval = 0;
-	}
-#endif
-
-#if defined(CONFIG_MACH_MSM8974_G3_KDDI_EVB) || defined(CONFIG_MACH_MSM8974_G3_KDDI)
-	printk("[RGB LED] chg_online.intval = %d usb_chg_online.intval = %d\n",
-		chg_online.intval, usb_chg_online.intval);
-	if (!(chg_online.intval || usb_chg_online.intval) && pattern_num == 3)
-		return ret;
-#else
-	printk("[RGB LED] chg_online.intval = %d\n", chg_online.intval);
-	if (!chg_online.intval && pattern_num == 3)
-		return ret;
-#endif
 	if (lge_get_boot_mode() <= LGE_BOOT_MODE_CHARGERLOGO) {
 		printk("[RGB LED] pattern_num = %d\n", pattern_num);
-#if !(defined(CONFIG_MACH_MSM8974_G3_LGU) || defined(CONFIG_MACH_MSM8974_G3_SKT) || defined(CONFIG_MACH_MSM8974_G3_KT) || defined(CONFIG_MACH_MSM8974_G3_ATT) || defined(CONFIG_MACH_MSM8974_G3_VZW) || defined(CONFIG_MACH_MSM8974_G3_SPR_US) || defined(CONFIG_MACH_MSM8974_G3_USC_US) || defined(CONFIG_MACH_MSM8974_G3_TMO_US) || defined(CONFIG_MACH_MSM8974_G3_GLOBAL_COM) || defined(CONFIG_MACH_MSM8974_G3_CN) || defined(CONFIG_MACH_MSM8974_G3_CA) || defined(CONFIG_MACH_MSM8974_G3_LRA))
 
-		if (!pattern_num || pattern_num == 35 || pattern_num == 36 || pattern_num == 1035)
+#if !(defined(CONFIG_MACH_MSM8974_G3_LGU) || defined(CONFIG_MACH_MSM8974_G3_SKT) || \
+	defined(CONFIG_MACH_MSM8974_G3_KT) || defined(CONFIG_MACH_MSM8974_G3_ATT) || \
+	defined(CONFIG_MACH_MSM8974_G3_VZW) || defined(CONFIG_MACH_MSM8974_G3_SPR_US) || \
+	defined(CONFIG_MACH_MSM8974_G3_USC_US) || defined(CONFIG_MACH_MSM8974_G3_ACG_US) || \
+	defined(CONFIG_MACH_MSM8974_G3_TMO_US) || defined(CONFIG_MACH_MSM8974_G3_GLOBAL_COM) || \
+	defined(CONFIG_MACH_MSM8974_G3_CN) || defined(CONFIG_MACH_MSM8974_G3_CA) || \
+	defined(CONFIG_MACH_MSM8974_G3_LRA))
+		if (!pattern_num || pattern_num == 35 || pattern_num == 36)
 			set_kpdbl_pattern(pattern_num);
 #endif
 		if ((pattern_num != 35) && (pattern_num != 36))

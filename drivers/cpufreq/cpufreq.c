@@ -1615,7 +1615,12 @@ static void init_freq_table(void)
  *                              GOVERNORS                            *
  *********************************************************************/
 
-
+#if defined(CONFIG_LGE_LOW_BATT_LIMIT)
+#if defined(CONFIG_MACH_MSM8974_G3_GLOBAL_COM)
+static unsigned int old_max_freq = 0;
+static unsigned int restore_flag = 1;
+#endif
+#endif
 int __cpufreq_driver_target(struct cpufreq_policy *policy,
 			    unsigned int target_freq,
 			    unsigned int relation)
@@ -1634,7 +1639,26 @@ int __cpufreq_driver_target(struct cpufreq_policy *policy,
 	pr_debug("target for CPU %u: %u kHz, relation %u \n", policy->cpu,
 		target_freq, relation );
 #if defined(CONFIG_LGE_LOW_BATT_LIMIT)
-	if(policy->max == target_freq && soc <= LOW_BATT_LIMIT_THRESHOLD
+#if defined(CONFIG_MACH_MSM8974_G3_GLOBAL_COM)
+	if (old_max_freq == 0)
+		old_max_freq = policy->max;
+	if (!out_low_battery_limit) {
+		/* limit to previous freq. */
+		update_index = (low_battery_limit[policy->cpu].last_cpufreq_index) - PREV_FREQ_INDEX;
+		if (low_battery_limit[policy->cpu].table > 0 && update_index >= 0) {
+			/* adjust max freq to target freq */
+			policy->max = low_battery_limit[policy->cpu].table[--update_index].frequency;
+			if(target_freq > policy->max)
+				target_freq = policy->max;
+		} else {
+			pr_info("low_limit_table is still NULL== %u\n",target_freq);
+		}
+	} else if (restore_flag == 1 && out_low_battery_limit == 1) {
+		policy->max = old_max_freq;
+		restore_flag = 0;
+	}
+#else
+	if (policy->max == target_freq && soc <= LOW_BATT_LIMIT_THRESHOLD
 		&& !out_low_battery_limit) {
 		// limit to previous freq.
 		update_index = (low_battery_limit[policy->cpu].last_cpufreq_index) - PREV_FREQ_INDEX;
@@ -1646,6 +1670,7 @@ int __cpufreq_driver_target(struct cpufreq_policy *policy,
 		}
 		pr_info("target for CPU %u: %u kHz, soc %ld\n", policy->cpu, target_freq, soc);
 	}
+#endif
 #endif
 	if (cpu_online(policy->cpu) && cpufreq_driver->target)
 		retval = cpufreq_driver->target(policy, target_freq, relation);

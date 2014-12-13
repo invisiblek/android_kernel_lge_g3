@@ -74,7 +74,7 @@
 #define VUP_MIN			150000
 #define VUP_MAX			400000
 #define VDOWN_MIN		400000
-#define VDOWN_MAX		600000
+#define VDOWN_MAX		650000
 
 /* TODO */
 /* 1. coding for additional excetion case in probe function */

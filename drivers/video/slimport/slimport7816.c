@@ -34,9 +34,9 @@
 #ifdef CONFIG_SLIMPORT_DYNAMIC_HPD
 #include "../msm/mdss/mdss_hdmi_slimport.h"
 #endif
-/* LGE NOTICE,
- * Use device tree structure data when defined "CONFIG_OF"
- * 2012-10-17, jihyun.seong@lge.com
+/*            
+                                                          
+                                   
  */
 #include <linux/of_gpio.h>
 #include <linux/of_platform.h>
@@ -51,15 +51,17 @@ int hdcp_disable;
 /* external_block_en = 1: enable, 0: disable*/
 int external_block_en;
 
+static bool irq_enable;
+
 
 /* to access global platform data */
 static struct anx7816_platform_data *g_pdata;
 
-/* LGE_CHANGE,
- * to apply High voltage to HDMI_SWITCH_EN
- * which can select MHL or SlimPort on LGPS11
- * this feature should be enable only when board has hdmi switch chip.
- * 2012-10-31, jihyun.seong@lge.com
+/*            
+                                          
+                                             
+                                                                      
+                                   
  */
 /* #define USE_HDMI_SWITCH */
 #define TRUE 1
@@ -109,7 +111,6 @@ void slimport_set_hdmi_hpd(int on)
 		rc = hdmi_slimport_ops->set_upstream_hpd(g_pdata->hdmi_pdev, 0);
 		pr_info("%s %s: hpd off = %s\n", LOG_TAG, __func__,
 				rc ? "failed" : "passed");
-
 	}
 	pr_info("%s %s:-\n", LOG_TAG, __func__);
 
@@ -120,6 +121,7 @@ bool slimport_is_connected(void)
 {
 	struct anx7816_platform_data *pdata = NULL;
 	bool result = false;
+	int i = 0;
 
 	if (!anx7816_client)
 		return false;
@@ -134,14 +136,15 @@ bool slimport_is_connected(void)
 		return false;
 
 	/* spin_lock(&pdata->lock); */
-
-	if (gpio_get_value_cansleep(pdata->gpio_cbl_det)) {
-		mdelay(10);
+	while (i < 100) {
 		if (gpio_get_value_cansleep(pdata->gpio_cbl_det)) {
 			pr_info("%s %s : Slimport Dongle is detected\n",
 					LOG_TAG, __func__);
 			result = true;
+			break;
 		}
+		i++;
+		msleep(10);
 	}
 	/* spin_unlock(&pdata->lock); */
 
@@ -149,9 +152,9 @@ bool slimport_is_connected(void)
 }
 EXPORT_SYMBOL(slimport_is_connected);
 
-/* LGE_CHANGE,
- * power control
- * 2012-10-17, jihyun.seong@lge.com
+/*            
+                
+                                   
  */
 static int slimport7816_avdd_power(unsigned int onoff)
 {
@@ -664,6 +667,30 @@ static ssize_t ctrl_reg18_store(struct device *dev, struct device_attribute *att
 }
 #endif
 /* for debugging */
+
+static ssize_t anx7816_enable_irq_show(struct device *dev, struct device_attribute *attr,
+		char *buf)
+{
+	return sprintf(buf, "%d\n", irq_enable);
+}
+
+static ssize_t anx7816_enable_irq_store(struct device *dev, struct device_attribute *attr,
+		const char *buf, size_t count)
+{
+	int ret;
+	long val;
+
+	if (!anx7816_client)
+		return -ENODEV;
+	ret = strict_strtol(buf, 10, &val);
+
+	if (ret)
+		return ret;
+
+	irq_enable = val;
+	return count;
+}
+
 static struct device_attribute slimport_device_attrs[] = {
 	__ATTR(rev_check, S_IRUGO | S_IWUSR, NULL, slimport7816_rev_check_store),
 	__ATTR(hdcp_disable, S_IRUGO | S_IWUSR, sp_hdcp_feature_show, sp_hdcp_feature_store),
@@ -671,6 +698,8 @@ static struct device_attribute slimport_device_attrs[] = {
 	__ATTR(hdmi_vga, S_IRUGO | S_IWUSR, slimport_sysfs_rda_hdmi_vga, NULL),
 	__ATTR(anx7730, S_IRUGO | S_IWUSR, NULL, anx7730_write_reg_store),
 	__ATTR(anx7816, S_IRUGO | S_IWUSR, NULL, anx7816_write_reg_store),
+	__ATTR(enable_irq, S_IRUGO | S_IWUSR, anx7816_enable_irq_show,
+			anx7816_enable_irq_store),
 #ifdef SP_REGISTER_SET_TEST /*slimport test */
 	__ATTR(ctrl_reg0, S_IRUGO | S_IWUSR, ctrl_reg0_show, ctrl_reg0_store),
 	__ATTR(ctrl_reg10, S_IRUGO | S_IWUSR, ctrl_reg10_show, ctrl_reg10_store),
@@ -947,7 +976,7 @@ static irqreturn_t anx7816_cbl_det_isr(int irq, void *data)
 {
 	struct anx7816_data *anx7816 = data;
 
-	if (gpio_get_value(anx7816->pdata->gpio_cbl_det)) {
+	if (gpio_get_value(anx7816->pdata->gpio_cbl_det) && irq_enable) {
 		if (!anx7816->slimport_connected) {
 			wake_lock(&anx7816->slimport_lock);
 			anx7816->slimport_connected = true;
@@ -955,7 +984,7 @@ static irqreturn_t anx7816_cbl_det_isr(int irq, void *data)
 			queue_delayed_work(anx7816->workqueue, &anx7816->work, 0);
 	/*		queue_delayed_work(anx7816->workqueue, &anx7816->dwc3_ref_clk_work, 0); */
 		}
-	} else {
+	} else if (!gpio_get_value(anx7816->pdata->gpio_cbl_det) && irq_enable) {
 		if (anx7816->slimport_connected) {
 			anx7816->slimport_connected = false;
 			pr_info_ratelimited("%s %s : detect cable removal\n", LOG_TAG, __func__);
@@ -986,9 +1015,9 @@ static void anx7816_work_func(struct work_struct *work)
 #endif
 }
 
-/* LGE_CHANGE,
- * add device tree parsing functions
- * 2012-10-17, jihyun.seong@lge.com
+/*            
+                                    
+                                   
  */
 #ifdef CONFIG_OF
 int anx7816_regulator_configure(

@@ -1398,6 +1398,9 @@ void slimport_edid_process(void)
 
 	pr_info("%s %s : edid_process\n", LOG_TAG, __func__);
 
+        if ( sp_tx_rx_type != DWN_STRM_IS_HDMI_7730 )
+                sp_tx_rx_type = sp_tx_get_cable_type(CHECK_AUXCH);
+
 	if (g_read_edid_flag == 1) {
 		if (check_with_pre_edid(edid_blocks))
 			g_read_edid_flag = 0;

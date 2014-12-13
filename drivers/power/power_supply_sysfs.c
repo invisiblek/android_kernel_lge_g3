@@ -35,8 +35,8 @@
  * (as a macro let's say).
  */
 
-/* BEGIN : janghyun.baek@lge.com 2012-12-26 Temporarily change mode to 777
- * debug power sysfs node */
+/*                                                                        
+                          */
 #ifdef CONFIG_LGE_PM
 #define PSEUDO_BATT_ATTR(_name)						\
 {									\
@@ -57,7 +57,7 @@
 	.store = power_supply_store_property,				\
 }
 
-#ifdef CONFIG_LGE_PM_VZW_LLK
+#ifdef CONFIG_LGE_PM_LLK_MODE
 #define STORE_DEMO_ENABLED_ATTR(_name)					\
 {									\
 	.attr = { .name = #_name, .mode = 0644},			\
@@ -74,7 +74,7 @@
 }
 #endif
 /* QCT origin */
-/* END : janghyun.baek@lge.com 2012-12-26 */
+/*                                        */
 
 static struct device_attribute power_supply_attrs[];
 
@@ -249,6 +249,7 @@ static struct device_attribute power_supply_attrs[] = {
 	POWER_SUPPLY_ATTR(input_current_max),
 	POWER_SUPPLY_ATTR(input_current_trim),
 	POWER_SUPPLY_ATTR(input_current_settled),
+	POWER_SUPPLY_ATTR(bypass_vchg_loop_debouncer),
 	POWER_SUPPLY_ATTR(current_now),
 	POWER_SUPPLY_ATTR(current_avg),
 	POWER_SUPPLY_ATTR(power_now),
@@ -309,7 +310,7 @@ static struct device_attribute power_supply_attrs[] = {
 #endif
 #endif
 #endif
-#if defined(CONFIG_LGE_PM_VZW_LLK)
+#if defined(CONFIG_LGE_PM_LLK_MODE)
 	STORE_DEMO_ENABLED_ATTR(store_demo_enabled),
 #endif
 	/* Properties of type `const char *' */

@@ -93,9 +93,8 @@ int get_felica_uart_status(void)
 
   if(FELICA_UART_NOTAVAILABLE == rval)
   {
-    #ifdef FEATURE_DEBUG_MED
-    FELICA_DEBUG_MSG("[FELICA_COMMON] uart can be used - wait 30msec \n");
-	#endif
+    FELICA_DEBUG_MSG_MED("[FELICA_COMMON] uart can be used - wait 30msec \n");
+
     while(0 < waitcount)
     {
       waitcount--;
@@ -103,9 +102,8 @@ int get_felica_uart_status(void)
 
       if(UART_STATUS_READY == __snfc_uart_control_get_uart_status())
       {
-        #ifdef FEATURE_DEBUG_MED
-        FELICA_DEBUG_MSG("[FELICA_COMMON] uart state was changed : avalable \n");
-		#endif
+        FELICA_DEBUG_MSG_MED("[FELICA_COMMON] uart state was changed : avalable \n");
+
         rval = FELICA_UART_AVAILABLE;
         break;
       }
@@ -114,27 +112,24 @@ int get_felica_uart_status(void)
 
   if(FELICA_UART_AVAILABLE != rval)
   {
-    #ifdef FEATURE_DEBUG_MED
-    FELICA_DEBUG_MSG("[FELICA_COMMON] uart can be used - wait 1sec \n");
-	#endif
+    FELICA_DEBUG_MSG_MED("[FELICA_COMMON] uart can be used - wait 1sec \n");
+
     while(0 < retrycount)
     {
       retrycount--;
       mdelay(100);
       waitcount = 3;
 
-      #ifdef FEATURE_DEBUG_MED
-      FELICA_DEBUG_MSG("[FELICA_COMMON] uart can be used - wait 30msec during wait 1sec \n");
-	  #endif
+      FELICA_DEBUG_MSG_MED("[FELICA_COMMON] uart can be used - wait 30msec during wait 1sec \n");
+
       while(0 < waitcount)
       {
         waitcount--;
         mdelay(10);
         if(UART_STATUS_READY == __snfc_uart_control_get_uart_status())
         {
-          #ifdef FEATURE_DEBUG_MED
-          FELICA_DEBUG_MSG("[FELICA_COMMON] uart state was changed : avalable \n");
-		  #endif
+          FELICA_DEBUG_MSG_MED("[FELICA_COMMON] uart state was changed : avalable \n");
+
           rval = FELICA_UART_AVAILABLE;
           break;
         }
@@ -161,9 +156,8 @@ int get_felica_uart_status(void)
 void set_felica_uart_status(_e_snfc_uart_status uart_status)
 {
 #if defined(CONFIG_LGE_FELICA_NFC)
-  #ifdef FEATURE_DEBUG_MED
-  FELICA_DEBUG_MSG("[FELICA_COMMON] set_felica_uart_status : %d \n", uart_status);
-  #endif
+  FELICA_DEBUG_MSG_MED("[FELICA_COMMON] set_felica_uart_status : %d \n", uart_status);
+
   __snfc_uart_control_set_uart_status(uart_status);
 #endif
 }
@@ -191,9 +185,8 @@ _e_snfc_i2c_status get_felica_i2c_status(void)
 void set_felica_i2c_status(_e_snfc_i2c_status i2c_status)
 {
 #if defined(CONFIG_LGE_FELICA_NFC)
-  #ifdef FEATURE_DEBUG_MED
-  FELICA_DEBUG_MSG("[FELICA_COMMON] set_felica_i2c_status : %d \n", i2c_status);
-  #endif
+  FELICA_DEBUG_MSG_MED("[FELICA_COMMON] set_felica_i2c_status : %d \n", i2c_status);
+
   __snfc_i2c_control_set_status(i2c_status);
 #endif
 }

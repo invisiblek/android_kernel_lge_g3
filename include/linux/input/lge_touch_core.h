@@ -19,7 +19,7 @@
 #define LGE_TOUCH_CORE_H
 #include <linux/wakelock.h>
 
-//#define LGE_TOUCH_TIME_DEBUG
+//                            
 
 #define MAX_FINGER	10
 #define MAX_BUTTON	4
@@ -522,6 +522,7 @@ enum{
 
 enum{
 	NOTIFY_TA_CONNECTION = 1,
+	NOTIFY_HDMI_CONNECTION,
 	NOTIFY_TEMPERATURE_CHANGE,
 	NOTIFY_PROXIMITY,
 	NOTIFY_HALL_IC,

@@ -68,7 +68,9 @@
 #include "../../staging/android/timed_output.h"
 
 extern struct qpnp_vib *vib_dev;
-//extern int qpnp_vib_set_with_vtglevel(struct qpnp_vib *vib, int vtglevel, int on);
+#ifdef CONFIG_TSPDRV_PMIC_VIBRATOR
+extern int qpnp_vib_set_with_vtglevel(struct qpnp_vib *vib, int vtglevel, int on);
+#endif
 /*USE THE QPNP-VIBRATOR END*/
 
 
@@ -341,8 +343,10 @@ IMMVIBESPIAPI VibeStatus ImmVibeSPI_ForceOut_AmpDisable(VibeUInt8 nActuatorIndex
 				atomic_set(&vib.gp1_clk_flag, 0);
 			}
 		} else {
-//			if(vib_dev != NULL)
-//				qpnp_vib_set_with_vtglevel(vib_dev, 0, false);
+#ifdef CONFIG_TSPDRV_PMIC_VIBRATOR
+			if(vib_dev != NULL)
+				qpnp_vib_set_with_vtglevel(vib_dev, 0, false);
+#endif
 		}
 
 		g_bAmpEnabled = false;
@@ -478,10 +482,14 @@ IMMVIBESPIAPI VibeStatus ImmVibeSPI_ForceOut_SetSamples(VibeUInt8 nActuatorIndex
 	        sm100_pwm_set(1, nForce); //MSM GP CLK update bit issue.
 		} else {
 			if(vib_dev != NULL) {
-#ifdef CONFIG_TSPDRV_3_0V_VIBRATOR
-//				qpnp_vib_set_with_vtglevel(vib_dev, (nForce * 31) / 128 + 1, true);
+#ifdef CONFIG_TSPDRV_PMIC_VIBRATOR
+#if defined CONFIG_TSPDRV_3_0V_VIBRATOR
+				qpnp_vib_set_with_vtglevel(vib_dev, (nForce * 31) / 128 + 1, true);
+#elif defined CONFIG_TSPDRV_2_9V_VIBRATOR
+				qpnp_vib_set_with_vtglevel(vib_dev, (nForce * 31) / 128 + 0, true);
 #else
-//				qpnp_vib_set_with_vtglevel(vib_dev, (nForce * 31) / 128 + 3, true);
+				qpnp_vib_set_with_vtglevel(vib_dev, (nForce * 31) / 128 + 3, true);
+#endif
 #endif
 			}
 		}

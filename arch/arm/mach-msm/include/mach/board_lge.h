@@ -107,6 +107,21 @@ struct pseudo_batt_info_type {
 struct pseudo_batt_info_type;
 void pseudo_batt_set(struct pseudo_batt_info_type *);
 #endif
+#ifdef CONFIG_LGE_SUPPORT_LCD_MAKER_ID
+typedef enum {
+	LCD_RENESAS_LGD = 0,
+	LCD_RENESAS_JDI,
+	LCD_MAKER_MAX,
+} lcd_maker_id;
+
+typedef struct {
+	lcd_maker_id maker_id;
+	int min_mvol;
+	int max_mvol;
+} lcd_vol_maker_tbl_type;
+
+lcd_maker_id lge_get_panel_maker(void);
+#endif
 
 enum lge_boot_mode_type {
 	LGE_BOOT_MODE_NORMAL = 0,
@@ -128,9 +143,9 @@ void __init lge_add_android_usb_devices(void);
 #endif
 
 #if defined(CONFIG_LCD_KCAL)
-/* LGE_CHANGE_S
-* change code for LCD KCAL
-* 2013-05-08, seojin.lee@lge.com
+/*             
+                          
+                                
 */
 struct kcal_data {
 		int red;
@@ -200,10 +215,13 @@ void __init lge_add_persist_ram_devices(void);
 void __init lge_add_lcd_misc_devices(void);
 #endif
 
+int gpio_debug_init(void);
+void gpio_debug_print(void);
+
 #if defined(CONFIG_LCD_KCAL)
-/* LGE_CHANGE_S
-* change code for LCD KCAL
-* 2013-05-08, seojin.lee@lge.com
+/*             
+                          
+                                
 */
 void __init lge_add_lcd_kcal_devices(void);
 #endif

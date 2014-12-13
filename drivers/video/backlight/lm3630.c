@@ -41,10 +41,10 @@
 #define BL_OFF       0
 
 
-/* LGE_CHANGE
- * To turn backlight on by setting default brightness
- * while kernel booting
- * 2013-01-30, baryun.hwang@lge.com
+/*           
+                                                     
+                       
+                                   
  */
 #define BOOT_BRIGHTNESS 1
 
@@ -112,10 +112,10 @@ EXPORT_SYMBOL(wireless_backlight_state);
 static void lm3630_hw_reset(void)
 {
 	int gpio = main_lm3630_dev->gpio;
-	/* LGE_CHANGE
-	 * Fix GPIO Setting Warning
-	 * 2011. 12. 14, kyunghoo.ryu@lge.com
-	 */
+	/*           
+                            
+                                      
+  */
 
 	if (gpio_is_valid(gpio)) {
 		gpio_direction_output(gpio, 1);
@@ -311,11 +311,11 @@ static int bl_set_intensity(struct backlight_device *bd)
 #else
 	struct i2c_client *client = to_i2c_client(bd->dev.parent);
 
-	/* LGE_CHANGE
-	 * if it's trying to set same backlight value,
-	 * skip it.
-	 * 2013-02-15, baryun.hwang@lge.com
-	 */
+	/*           
+                                               
+            
+                                    
+  */
 	if (bd->props.brightness == cur_main_lcd_level) {
 		pr_debug("%s level is already set. skip it\n", __func__);
 		return 0;

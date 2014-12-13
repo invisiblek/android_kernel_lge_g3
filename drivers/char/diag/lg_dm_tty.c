@@ -146,6 +146,73 @@ int					dm_modem_response_body_length;
 short dm_rx_start_flag;
 short dm_rx_end_flag;
 
+char empty_mask_buff[] = {29, 28, 59, 126, 0, 120, -16, 126, 124, -109,
+    73, 126, 28, -107, 42, 126, 12, 20, 58, 126, 99, -27, -95, 126,
+    75, 15, 0, 0, -69, 96, 126, 75, 9, 0, 0, 98, -74, 126, 75, 8,
+    0, 0, -66, -20, 126, 75, 8, 1, 0, 102, -11, 126, 75, 4, 0, 0,
+    29, 73, 126, 75, 4, 15, 0, -43, -54, 126, 125, 93, 5, 0, 0, 0,
+    0, 0, 0, 116, 65, 126, 115, 0, 0, 0, 0, 0, 0, 0, -38, -127, 126,
+    96, 0, 18, 106, 126};
+
+void lge_dm_dload_fn(struct work_struct *work)
+{
+
+#ifdef CONFIG_DIAGFWD_BRIDGE_CODE
+    short modem_chip = Secondary_modem_chip;
+    int err = 0;
+    int index = 0;
+#else
+    short modem_chip = Primary_modem_chip;
+#endif /*CONFIG_DIAGFWD_BRIDGE_CODE*/
+
+    int count = 0, length = 0;
+    int size = sizeof(empty_mask_buff)/sizeof(char);
+    char mask_buf[20];
+
+    while (count < size) {
+        mask_buf[length++] = empty_mask_buff[count];
+        if (empty_mask_buff[count] == CONTROL_CHAR) {
+            if (modem_chip == Primary_modem_chip) {
+                diag_process_hdlc((unsigned char *)mask_buf, length);
+            } else if (modem_chip == Secondary_modem_chip) {
+#ifdef CONFIG_DIAGFWD_BRIDGE_CODE
+                /* send masks to All 9k */
+                for (index = 0; index < MAX_HSIC_DATA_CH; index++) {
+                    if (diag_hsic[index].hsic_ch && (count > 0)){
+                        /* wait sending mask updates
+                         * if HSIC ch not ready */
+                        if (diag_hsic[index].in_busy_hsic_write)
+                            wait_event_interruptible(driver->wait_q,
+                                (diag_hsic[index].
+                                 in_busy_hsic_write != 1));
+                        diag_hsic[index].in_busy_hsic_write = 1;
+                        diag_hsic[index].in_busy_hsic_read_on_device =
+                                            0;
+                        err = diag_bridge_write(index, (unsigned char *)mask_buf, length);
+
+                        if (err) {
+                            pr_err("diag: err sending mask to MDM: %d\n",
+                                   err);
+                            /*
+                            * If the error is recoverable, then
+                            * clear the write flag, so we will
+                            * resubmit a write on the next frame.
+                            * Otherwise, don't resubmit a write
+                            * on the next frame.
+                            */
+                            if ((-ESHUTDOWN) != err)
+                                diag_hsic[index].in_busy_hsic_write = 0;
+                         }
+                     }
+                }
+#endif /*CONFIG_DIAGFWD_BRIDGE_CODE*/
+            }
+            length = 0;
+        }
+        count++;
+    }
+}
+
 void lge_dm_usb_fn(struct work_struct *work)
 {
 		usb_diag_write(driver->legacy_ch, driver->write_ptr_svc);
@@ -290,7 +357,8 @@ static int lge_dm_tty_read_thread(void *data)
 {
 	int i = 0;
 	struct dm_tty *lge_dm_tty_drv = NULL;
-	int clear_read_wakelock;
+	int copy_data = 0;
+    unsigned long flags;
 
 	lge_dm_tty_drv = lge_dm_tty;
 
@@ -301,7 +369,6 @@ static int lge_dm_tty_read_thread(void *data)
 
 		mutex_lock(&driver->diagchar_mutex);
 
-		clear_read_wakelock = 0;
 		if ((lge_dm_tty->set_logging == 1)
 				&& (driver->logging_mode == DM_APP_MODE)) {
 
@@ -315,12 +382,12 @@ static int lge_dm_tty_read_thread(void *data)
 					data->buf_in_1,
 					data->write_ptr_1->length);
 
-					if (!driver->real_time_mode) {
-						process_lock_on_copy(&data->nrt_lock);
-						clear_read_wakelock++;
-					}
+					diag_ws_on_copy();
+					copy_data = 1;
 
+                    spin_lock_irqsave(&data->in_busy_lock, flags);
 					data->in_busy_1 = 0;
+                    spin_unlock_irqrestore(&data->in_busy_lock, flags);
 				}
 
 				if (data->in_busy_2 == 1) {
@@ -328,11 +395,13 @@ static int lge_dm_tty_read_thread(void *data)
 					lge_dm_tty_drv,
 					data->buf_in_2,
 					data->write_ptr_2->length);
-					if (!driver->real_time_mode) {
-						process_lock_on_copy(&data->nrt_lock);
-						clear_read_wakelock++;
-					}
+
+					diag_ws_on_copy();
+					copy_data = 1;
+
+                    spin_lock_irqsave(&data->in_busy_lock, flags);
 					data->in_busy_2 = 0;
+                    spin_unlock_irqrestore(&data->in_busy_lock, flags);
 				}
 			}
 
@@ -350,16 +419,7 @@ static int lge_dm_tty_read_thread(void *data)
 
 							cmd->in_busy_1 = 0;
 						}
-						if (cmd->in_busy_2 == 1) {
-							if(cmd->write_ptr_2->length > 0 && cmd->buf_in_2 != NULL){
-								lge_dm_tty_modem_response(
-								lge_dm_tty_drv,
-								cmd->buf_in_2,
-								cmd->write_ptr_2->length);
-							}
 
-							cmd->in_busy_2 = 0;
-						}
 				}
 			}
 
@@ -373,13 +433,18 @@ static int lge_dm_tty_read_thread(void *data)
 
 		}
 
-		if (clear_read_wakelock) {
-			for (i = 0; i < NUM_SMD_DATA_CHANNELS; i++)
-				process_lock_on_copy_complete(
-					&driver->smd_data[i].nrt_lock);
-	}
-
 		mutex_unlock(&driver->diagchar_mutex);
+		if (copy_data) {
+			/*
+			 * Flush any work that is currently pending on the data
+			 * channels. This will ensure that the next read is not
+			 * missed.
+			 */
+			for (i = 0; i < NUM_SMD_DATA_CHANNELS; i++)
+				flush_workqueue(driver->smd_data[i].wq);
+			wake_up(&driver->smd_wait_q);
+			diag_ws_on_copy_complete();
+		}
 
 		if (kthread_should_stop())
 			break;
@@ -475,6 +540,7 @@ static int lge_dm_tty_open(struct tty_struct *tty, struct file *file)
 
 	lge_dm_tty_drv->dm_wq = create_singlethread_workqueue("dm_wq");
 	INIT_WORK(&(lge_dm_tty_drv->dm_usb_work), lge_dm_usb_fn);
+    INIT_WORK(&(lge_dm_tty_drv->dm_dload_work), lge_dm_dload_fn);
 
 	return 0;
 
@@ -519,6 +585,7 @@ static void lge_dm_tty_close(struct tty_struct *tty, struct file *file)
 	pr_info(DM_TTY_MODULE_NAME ": %s: TTY device closed\n", __func__);
 
 	cancel_work_sync(&(lge_dm_tty_drv->dm_usb_work));
+    cancel_work_sync(&(lge_dm_tty_drv->dm_dload_work));
 	destroy_workqueue(lge_dm_tty_drv->dm_wq);
 
 	return;
@@ -533,6 +600,7 @@ static int lge_dm_tty_ioctl(struct tty_struct *tty, unsigned int cmd,
 	struct dm_tty *lge_dm_tty_drv = NULL;
 	int status, i = 0;
   char rw_buf[300];
+    unsigned long flags;
 
 	result = 0;
 	lge_dm_tty_drv = lge_dm_tty;
@@ -544,6 +612,22 @@ static int lge_dm_tty_ioctl(struct tty_struct *tty, unsigned int cmd,
 
 	switch (cmd) {
 	case DM_TTY_MODEM_OPEN_SDM:
+		if(lge_dm_tty_drv->logging_mode == DM_APP_SDM)
+		{
+			pr_info(DM_TTY_MODULE_NAME ": %s: lge_dm_tty_ioctl "
+			"already DM_TTY_MODEM_OPEN_SDM\n", __func__);
+
+			result = TRUE;
+
+			if (copy_to_user((void *)arg, (const void *)&result,
+				sizeof(result)) == 0)
+				pr_info(DM_TTY_MODULE_NAME ": %s: lge_dm_tty_ioctl "
+					"already DM_TTY_MODEM_OPEN_SDM"
+					"result = %d\n", __func__, result);
+
+			break;
+		}
+
 		lge_dm_tty_drv->logging_mode = DM_APP_SDM;
 		
 		pr_info(DM_TTY_MODULE_NAME ": %s: lge_dm_tty_ioctl "
@@ -557,8 +641,10 @@ static int lge_dm_tty_ioctl(struct tty_struct *tty, unsigned int cmd,
 		if (modem_number == Primary_modem_chip) {
 
 			for (i = 0; i < NUM_SMD_DATA_CHANNELS; i++) {
+                spin_lock_irqsave(&driver->smd_data[i].in_busy_lock, flags);
 				driver->smd_data[i].in_busy_1 = 0;
 				driver->smd_data[i].in_busy_2 = 0;
+                spin_unlock_irqrestore(&driver->smd_data[i].in_busy_lock, flags);
 				/* Poll SMD channels to check for data*/
 				if (driver->smd_data[i].ch)
 					queue_work(driver->diag_wq,
@@ -567,8 +653,10 @@ static int lge_dm_tty_ioctl(struct tty_struct *tty, unsigned int cmd,
 			}
 
 			for (i = 0; i < NUM_SMD_CMD_CHANNELS; i++) {
+                spin_lock_irqsave(&driver->smd_cmd[i].in_busy_lock, flags);
 				driver->smd_cmd[i].in_busy_1 = 0;
 				driver->smd_cmd[i].in_busy_2 = 0;
+                spin_unlock_irqrestore(&driver->smd_cmd[i].in_busy_lock, flags);
 				if (driver->smd_cmd[i].ch)
 					queue_work(driver->diag_wq,
 						&(driver->smd_cmd[i].
@@ -612,6 +700,8 @@ static int lge_dm_tty_ioctl(struct tty_struct *tty, unsigned int cmd,
 		else
 			diagfwd_connect();
 		
+        diag_ws_reset();
+
 		result = TRUE;
 
 		if (copy_to_user((void *)arg, (const void *)&result,
@@ -632,10 +722,10 @@ static int lge_dm_tty_ioctl(struct tty_struct *tty, unsigned int cmd,
 		mutex_unlock(&driver->diagchar_mutex);
 
 		for (i = 0; i < NUM_SMD_DATA_CHANNELS; i++) {
-		
+            spin_lock_irqsave(&driver->smd_data[i].in_busy_lock, flags);
 			driver->smd_data[i].in_busy_1 = 0;
 			driver->smd_data[i].in_busy_2 = 0;
-	
+            spin_unlock_irqrestore(&driver->smd_data[i].in_busy_lock, flags);
 			/* Poll SMD channels to check for data*/
 			if (driver->smd_data[i].ch)
 				queue_work(driver->diag_wq,
@@ -661,6 +751,8 @@ static int lge_dm_tty_ioctl(struct tty_struct *tty, unsigned int cmd,
 			diagfwd_disconnect();
 		else
 			diagfwd_connect();
+
+          diag_ws_reset();
 
 	  break;
 
@@ -691,7 +783,7 @@ static int lge_dm_tty_ioctl(struct tty_struct *tty, unsigned int cmd,
 			"result = %d\n", __func__, result);
 	break;
   case DM_TTY_MODEM_DEBUGGER:
-    //boyoung507.kim@lge.com
+    //                      
     memset(rw_buf, 0, sizeof(rw_buf));
     strcpy(rw_buf,ssr_noti);
     if (copy_to_user((void *)arg, &rw_buf, sizeof(rw_buf))){

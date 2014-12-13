@@ -80,9 +80,14 @@
 #define MAX17048_LOW_POLLING_PERIOD     5000
 #endif
 
-#ifdef CONFIG_LGE_PM_VZW_LLK
+#ifdef CONFIG_LGE_PM_LLK_MODE
+#ifdef CONFIG_MACH_MSM8974_G3_VZW
 #define LLK_MAX_THR_SOC 35
 #define LLK_MIN_THR_SOC 30
+#else
+#define LLK_MAX_THR_SOC 75
+#define LLK_MIN_THR_SOC 70
+#endif
 #endif
 
 #define MAX17048_BATTERY_FULL           100
@@ -123,7 +128,7 @@ struct max17048_chip {
 	int state;
 	struct power_supply *batt_psy;
 	struct power_supply *ac_psy;
-#ifdef CONFIG_LGE_PM_VZW_LLK
+#ifdef CONFIG_LGE_PM_LLK_MODE
 	struct power_supply *usb_psy;
 #endif
 #endif
@@ -516,7 +521,7 @@ static void max17048_work(struct work_struct *work)
 #ifdef CONFIG_LGE_PM
 	int ret = 0;
 #endif
-#ifdef CONFIG_LGE_PM_VZW_LLK
+#ifdef CONFIG_LGE_PM_LLK_MODE
 	union power_supply_propval val = {0,};
 #endif
 
@@ -570,17 +575,17 @@ static void max17048_work(struct work_struct *work)
 				goto psy_error;
 		}
 
-#ifdef CONFIG_LGE_PM_VZW_LLK
-		if (!chip->usb_psy) {
-			chip->usb_psy = power_supply_get_by_name("usb");
-
-			if (!chip->usb_psy)
-				goto psy_error;
-		}
-		chip->usb_psy->get_property(chip->usb_psy,POWER_SUPPLY_PROP_PRESENT,&val);
+#ifdef CONFIG_LGE_PM_LLK_MODE
+		chip->batt_psy->get_property(chip->batt_psy,
+				POWER_SUPPLY_PROP_STORE_DEMO_ENABLED,&val);
 		if (val.intval) {
-			chip->batt_psy->get_property(chip->batt_psy,
-					POWER_SUPPLY_PROP_STORE_DEMO_ENABLED,&val);
+			if (!chip->usb_psy) {
+				chip->usb_psy = power_supply_get_by_name("usb");
+
+				if (!chip->usb_psy)
+					goto psy_error;
+			}
+			chip->usb_psy->get_property(chip->usb_psy,POWER_SUPPLY_PROP_PRESENT,&val);
 			if (val.intval) {
 				printk(KERN_INFO "%s : LLK_mode is operating.\n", __func__);
 				if (chip->capacity_level > LLK_MAX_THR_SOC) {
@@ -1067,9 +1072,9 @@ static int max17048_parse_dt(struct device *dev,
 		mdata->temp_co_cold = 5050;
 		mdata->empty = 0;
 	} else if (cell_info == TCD_AAC) {
-		mdata->rcomp = 55;
-		mdata->temp_co_hot = 637;
-		mdata->temp_co_cold = 4525;
+		mdata->rcomp = 106;
+		mdata->temp_co_hot = 900;
+		mdata->temp_co_cold = 6325;
 		mdata->empty = 0;
 	}
 #else

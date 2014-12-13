@@ -21,14 +21,14 @@
  * software in any way with any other Broadcom software provided under a license
  * other than the GPL, without Broadcom's express prior written consent.
  *
- * $Id: dhd_dbg.h 419132 2013-08-19 21:33:05Z $
+ * $Id: dhd_dbg.h 491225 2014-07-15 11:58:29Z $
  */
 
 #ifndef _dhd_dbg_
 #define _dhd_dbg_
 
 #if !defined(CUSTOMER_HW4)
-#define USE_NET_RATELIMIT		net_ratelimit()
+#define USE_NET_RATELIMIT		1
 #else
 #define USE_NET_RATELIMIT		1
 #endif
@@ -55,9 +55,11 @@
 
 #ifdef CUSTOMER_HW4
 #define DHD_TRACE_HW4	DHD_ERROR
+#define DHD_INFO_HW4	DHD_ERROR
 #else
 #define DHD_TRACE_HW4	DHD_TRACE
-#endif
+#define DHD_INFO_HW4	DHD_INFO
+#endif /* CUSTOMER_HW4 */
 
 #define DHD_ERROR_ON()		(dhd_msg_level & DHD_ERROR_VAL)
 #define DHD_TRACE_ON()		(dhd_msg_level & DHD_TRACE_VAL)
@@ -98,9 +100,11 @@
 
 #ifdef CUSTOMER_HW4
 #define DHD_TRACE_HW4	DHD_ERROR
+#define DHD_INFO_HW4	DHD_ERROR
 #else
 #define DHD_TRACE_HW4	DHD_TRACE
-#endif
+#define DHD_INFO_HW4	DHD_INFO
+#endif /* CUSTOMER_HW4 */
 
 #define DHD_ERROR_ON()		0
 #define DHD_TRACE_ON()		0

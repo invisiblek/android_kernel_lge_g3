@@ -1,10 +1,10 @@
 
-/* LGE_CHANGE_S
- *
- * do read/mmap profiling during booting
- * in order to use the data as readahead args
- *
- * matia.kim@lge.com 20130403
+/*             
+  
+                                        
+                                             
+  
+                             
  */
 #include "mount.h"
 #include "ext4/ext4.h"
@@ -173,7 +173,7 @@ static int get_absolute_path(unsigned char *buf, int buflen, struct file *filp)
 		tmpoldmnt = tmpmnt;
 		while (!IS_ROOT(tmpdentry)) {
 			strlcpy(tmpstr, buf, buflen);
-			/* byungchul.park@lge.com */
+			/*                        */
 			/* make codes robust */
 			strlcpy(buf, tmpdentry->d_name.name, buflen);
 			buf[buflen - 1] = '\0';
@@ -194,7 +194,7 @@ static int get_absolute_path(unsigned char *buf, int buflen, struct file *filp)
 	} while (tmpmnt != tmpoldmnt);
 	strlcpy(tmpstr, buf, buflen);
 	strlcpy(buf, "/", 2);
-	/* byungchul.park@lge.com */
+	/*                        */
 	/* make codes robust */
 	if (strlen(buf) + strlen(tmpstr) > (buflen - 1))
 		return -ENOMEM;
@@ -203,7 +203,8 @@ static int get_absolute_path(unsigned char *buf, int buflen, struct file *filp)
 	return 0;
 }
 
-static int is_system_partition(unsigned char *fn) {
+static int is_system_partition(unsigned char *fn)
+{
 	return strncmp((const char*)fn, "/system/", 8) == 0 ? 1 : 0;
 }
 
@@ -308,4 +309,4 @@ int sreadahead_prof(struct file *filp, size_t len, loff_t pos)
 	}
 	return 0;
 }
-/* LGE_CHANGE_E */
+/*              */

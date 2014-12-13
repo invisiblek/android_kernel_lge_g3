@@ -62,11 +62,17 @@ typedef enum _e_snfc_i2c_status {
 //#define FELICA_NFC_INTERFACE
 
 /* debug message */
-#define FEATURE_DEBUG_HIGH
-#define FEATURE_DEBUG_MED
-#define FEATURE_DEBUG_LOW
+//#define FEATURE_DEBUG_HIGH
+//#define FEATURE_DEBUG_MED
+//#define FEATURE_DEBUG_LOW
+
 #define RXTX_LOG_ENABLE
-#define FELICA_DEBUG_MSG pr_debug
+
+#define FELICA_DEBUG_MSG_HIGH pr_info
+#define FELICA_DEBUG_MSG_MED pr_info
+#define FELICA_DEBUG_MSG_LOW pr_debug
+
+//#define FELICA_DEBUG_MSG pr_info
 
 /* felica */
 #define FELICA_NAME    "felica"

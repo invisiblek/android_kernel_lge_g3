@@ -44,22 +44,22 @@
 #include <linux/param.h>
 #include <linux/bitops.h>
 #include <linux/termios.h>
-/* LGE_CHANGE_S, [BT][younghyun.kwon@lge.com], 2013-04-10, Configuration bluesleep for A1 LPM */
+/*                                                                                            */
 #ifdef CONFIG_LGE_BLUESLEEP
 #include <linux/gpio.h>
 #include <linux/of_gpio.h>
 #include <linux/wakelock.h>
-#else  /* CONFIG_LGE_BLUESLEEP */
+#else  /*                      */
 #include <mach/gpio.h>
-#endif /* CONFIG_LGE_BLUESLEEP */
-/* LGE_CHANGE_E, [BT][younghyun.kwon@lge.com], 2013-04-10 */
+#endif /*                      */
+/*                                                        */
 #include <mach/msm_serial_hs.h>
 
 #include <net/bluetooth/bluetooth.h>
 #include <net/bluetooth/hci_core.h> /* event notifications */
 #include "hci_uart.h"
 
-/* LGE_CHANGE_S, [BT][younghyun.kwon@lge.com], 2013-04-10, Configuration bluesleep for A1 LPM */
+/*                                                                                            */
 #ifdef CONFIG_LGE_BLUESLEEP
 #undef BT_INFO
 #define BT_INFO(fmt, arg...) printk(KERN_INFO "*[bluesleep(%d)-%s()] " fmt "\n" , __LINE__, __FUNCTION__, ## arg)
@@ -74,12 +74,18 @@
 #define UART_OFF 1
 #define UART_NOT_OFF 0
 //BT_E : [PSIX-6850] LPM_SLEEP_MODE_DO_NOT_UART_CLOSE
-#endif /* CONFIG_LGE_BLUESLEEP */
-/* LGE_CHANGE_E, [BT][younghyun.kwon@lge.com], 2013-04-10 */
+#endif /*                      */
+/*                                                        */
 
+//BT_S : [CONBT-952] Remove duplicate bluesleep log
+#define REMOVE_DUPLICATE_BT_LOG
+//BT_E : [CONBT-952] Remove duplicate bluesleep log
+
+#ifndef REMOVE_DUPLICATE_BT_LOG     // Not Used
 #define BT_SLEEP_DBG
 #ifndef BT_SLEEP_DBG
 #define BT_DBG(fmt, arg...)
+#endif
 #endif
 
 /* BT DMA Request / For UART */
@@ -108,13 +114,13 @@ struct bluesleep_info {
 	struct pm_qos_request dma_qos;
 	int dma_qos_request;
 #endif /* BT_DMA_QOS_REQUEST */
-/* LGE_CHANGE_S, [BT][younghyun.kwon@lge.com], 2013-04-10, Configuration bluesleep for A1 LPM */
+/*                                                                                            */
 #ifdef CONFIG_LGE_BLUESLEEP
-/* LG_BTUI : chanha.park@lge.com : Enable Bluesleep-[S] */
+/*                                                      */
 	struct wake_lock wake_lock;
-/* LG_BTUI : chanha.park@lge.com : Enable Bluesleep-[S] */
-#endif /* CONFIG_LGE_BLUESLEEP */
-/* LGE_CHANGE_E, [BT][younghyun.kwon@lge.com], 2013-04-10 */
+/*                                                      */
+#endif /*                      */
+/*                                                        */
 };
 
 /* work function */
@@ -129,16 +135,16 @@ DECLARE_DELAYED_WORK(sleep_workqueue, bluesleep_sleep_work);
 #define bluesleep_rx_idle()     schedule_delayed_work(&sleep_workqueue, 0)
 #define bluesleep_tx_idle()     schedule_delayed_work(&sleep_workqueue, 0)
 
-/* LG_BTUI : chanha.park@lge.com : Enable Bluesleep-[S] */
+/*                                                      */
 #ifdef CONFIG_LGE_BLUESLEEP
 /* Fixed power consumtion problem when connected with Samsung stereo headset. */
 /* 5 second timeout */
 #define TX_TIMER_INTERVAL	5
-#else /* CONFIG_LGE_BLUESLEEP */
+#else /*                      */
 /* 1 second timeout */
 #define TX_TIMER_INTERVAL	1
-#endif /* CONFIG_LGE_BLUESLEEP */
-/* LG_BTUI : chanha.park@lge.com : Enable Bluesleep-[E] */
+#endif /*                      */
+/*                                                      */
 
 /* state variable names and bit positions */
 #define BT_PROTO	0x01
@@ -153,37 +159,37 @@ static struct bluesleep_info *bsi;
 /* module usage */
 static atomic_t open_count = ATOMIC_INIT(1);
 
-/* LGE_CHANGE_S, [BT][younghyun.kwon@lge.com], 2013-04-10, Configuration bluesleep for A1 LPM */
+/*                                                                                            */
 #ifdef CONFIG_LGE_BLUESLEEP
 #define EDGE_RISING		0
 #define EDGE_FALLING		1
 #define LEVEL_HIGH		2
 #define LEVEL_LOW		3
-#endif /* CONFIG_LGE_BLUESLEEP */
-/* LGE_CHANGE_E, [BT][younghyun.kwon@lge.com], 2013-04-10 */
+#endif /*                      */
+/*                                                        */
 /*
  * Local function prototypes
  */
-/* LG_BTUI : chanha.park@lge.com : Enable Bluesleep-[S] */
+/*                                                      */
 #ifndef CONFIG_LGE_BLUESLEEP
 static int bluesleep_hci_event(struct notifier_block *this,
 			    unsigned long event, void *data);
-#endif /* CONFIG_LGE_BLUESLEEP */
-/* LG_BTUI : chanha.park@lge.com : Enable Bluesleep-[E] */
+#endif /*                      */
+/*                                                      */
 
 /*
  * Global variables
  */
 
-/* LGE_CHANGE_S, [BT][younghyun.kwon@lge.com], 2013-04-10, Configuration bluesleep for A1 LPM */
+/*                                                                                            */
 #ifdef CONFIG_LGE_BLUESLEEP
 /** Device table */
 static struct of_device_id bluesleep_match_table[] = {
 	{ .compatible = "lge,bcm_bluesleep" },
 	{}
 };
-#endif /* CONFIG_LGE_BLUESLEEP */
-/* LGE_CHANGE_E, [BT][younghyun.kwon@lge.com], 2013-04-10 */
+#endif /*                      */
+/*                                                        */
 
 /** Global state flags */
 static unsigned long flags;
@@ -197,14 +203,14 @@ static struct timer_list tx_timer;
 /** Lock for state transitions */
 static spinlock_t rw_lock;
 
-/* LG_BTUI : chanha.park@lge.com : Enable Bluesleep-[S] */
+/*                                                      */
 #ifndef CONFIG_LGE_BLUESLEEP
 /** Notifier block for HCI events */
 struct notifier_block hci_event_nblock = {
 	.notifier_call = bluesleep_hci_event,
 };
-#endif /* CONFIG_LGE_BLUESLEEP */
-/* LG_BTUI : chanha.park@lge.com : Enable Bluesleep-[E] */
+#endif /*                      */
+/*                                                      */
 
 struct proc_dir_entry *bluetooth_dir, *sleep_dir;
 
@@ -230,7 +236,12 @@ static void hsuart_power(int on)
  */
 static inline int bluesleep_can_sleep(void)
 {
+//BT_S : [CONBT-952] Remove duplicate bluesleep log
+#ifndef REMOVE_DUPLICATE_BT_LOG
 	BT_INFO("");
+#endif
+//BT_E : [CONBT-952] Remove duplicate bluesleep log
+
 	/* check if MSM_WAKE_BT_GPIO and BT_WAKE_MSM_GPIO are both deasserted */
 	return gpio_get_value(bsi->ext_wake) &&
 		gpio_get_value(bsi->host_wake) &&
@@ -239,19 +250,23 @@ static inline int bluesleep_can_sleep(void)
 
 void bluesleep_sleep_wakeup(void)
 {
+//BT_S : [CONBT-952] Remove duplicate bluesleep log
+#ifndef REMOVE_DUPLICATE_BT_LOG
 	BT_INFO("");
+#endif
+//BT_E : [CONBT-952] Remove duplicate bluesleep log
 
 	if (test_bit(BT_ASLEEP, &flags)) {
 		BT_DBG("waking up...");
-/* LG_BTUI : chanha.park@lge.com : Enable Bluesleep-[S] */
+/*                                                      */
 #ifdef CONFIG_LGE_BLUESLEEP
 		wake_lock(&bsi->wake_lock);
-#else /* CONFIG_LGE_BLUESLEEP */
+#else /*                      */
 		/* Start the timer */
 		mod_timer(&tx_timer, jiffies + (TX_TIMER_INTERVAL * HZ));
 		gpio_set_value(bsi->ext_wake, 0);
-#endif /* CONFIG_LGE_BLUESLEEP */
-/* LG_BTUI : chanha.park@lge.com : Enable Bluesleep-[E] */
+#endif /*                      */
+/*                                                      */
 
 		clear_bit(BT_ASLEEP, &flags);
 
@@ -264,7 +279,7 @@ void bluesleep_sleep_wakeup(void)
 		/*Activating UART */
 		hsuart_power(1);
 	}
-/* LG_BTUI : chanha.park@lge.com : Enable Bluesleep-[S] */
+/*                                                      */
 #ifdef CONFIG_LGE_BLUESLEEP
 	else {
 		int wake, host_wake;
@@ -281,8 +296,8 @@ void bluesleep_sleep_wakeup(void)
 			hsuart_power(1);
 		}
 	}
-#endif /* CONFIG_LGE_BLUESLEEP */
-/* LG_BTUI : chanha.park@lge.com : Enable Bluesleep-[E] */
+#endif /*                      */
+/*                                                      */
 }
 
 /**
@@ -291,7 +306,11 @@ void bluesleep_sleep_wakeup(void)
  */
 static void bluesleep_sleep_work(struct work_struct *work)
 {
+//BT_S : [CONBT-952] Remove duplicate bluesleep log
+#ifndef REMOVE_DUPLICATE_BT_LOG
 	BT_INFO("+++++");
+#endif
+//BT_E : [CONBT-952] Remove duplicate bluesleep log
 
 	if (bluesleep_can_sleep()) {
 		/* already asleep, this is an error case */
@@ -300,11 +319,11 @@ static void bluesleep_sleep_work(struct work_struct *work)
 			BT_DBG("already asleep");
 			return;
 		}
-/* LG_BTUI : chanha.park@lge.com : Enable Bluesleep-[S] */
+/*                                                      */
 #ifndef CONFIG_LGE_BLUESLEEP
 		if (msm_hs_tx_empty(bsi->uport)) {
-#endif /*CONFIG_LGE_BLUESLEEP*/			
-/* LG_BTUI : chanha.park@lge.com : Enable Bluesleep-[E] */
+#endif /*                    */			
+/*                                                      */
 			BT_DBG("going to sleep...");
 			set_bit(BT_ASLEEP, &flags);
 			/*Deactivating UART */
@@ -316,27 +335,36 @@ static void bluesleep_sleep_work(struct work_struct *work)
 		}
 #endif /* BT_DMA_QOS_REQUEST */
 
-/* LG_BTUI : chanha.park@lge.com : Enable Bluesleep-[S] */
+/*                                                      */
 #ifdef CONFIG_LGE_BLUESLEEP
 			wake_lock_timeout(&bsi->wake_lock, HZ / 2);
-#endif /* CONFIG_LGE_BLUESLEEP */
-/* LG_BTUI : chanha.park@lge.com : Enable Bluesleep-[E] */
+#endif /*                      */
+/*                                                      */
 #ifndef CONFIG_LGE_BLUESLEEP
 		}
-#endif /*CONFIG_LGE_BLUESLEEP*/
-/* LG_BTUI : chanha.park@lge.com : Enable Bluesleep-[S] */
+#endif /*                    */
+/*                                                      */
 #ifndef CONFIG_LGE_BLUESLEEP
 		else {
 			mod_timer(&tx_timer, jiffies + (TX_TIMER_INTERVAL * HZ));
 			return;
 		}
-#endif /* CONFIG_LGE_BLUESLEEP */
-/* LG_BTUI : chanha.park@lge.com : Enable Bluesleep-[E] */
+#endif /*                      */
+/*                                                      */
 	} else {
+//BT_S : [CONBT-952] Remove duplicate bluesleep log
+#ifdef REMOVE_DUPLICATE_BT_LOG
+		BT_DBG("bluesleep_sleep_wakeup() called...");
+#endif
+//BT_E : [CONBT-952] Remove duplicate bluesleep log
 		bluesleep_sleep_wakeup();
 	}
 
+//BT_S : [CONBT-952] Remove duplicate bluesleep log
+#ifndef REMOVE_DUPLICATE_BT_LOG
 	BT_INFO("-----");
+#endif
+//BT_E : [CONBT-952] Remove duplicate bluesleep log
 }
 
 /**
@@ -346,11 +374,15 @@ static void bluesleep_sleep_work(struct work_struct *work)
  */
 static void bluesleep_hostwake_task(unsigned long data)
 {
+//BT_S : [CONBT-952] Remove duplicate bluesleep log
+#ifndef REMOVE_DUPLICATE_BT_LOG
 	BT_DBG("hostwake line change");
+#endif
+//BT_E : [CONBT-952] Remove duplicate bluesleep log
 
 	spin_lock(&rw_lock);
 
-/* LG_BTUI : chanha.park@lge.com : Enable Bluesleep-[S] */
+/*                                                      */
 #ifdef CONFIG_LGE_BLUESLEEP
 	if (gpio_get_value(bsi->host_wake) == 0) {
 		BT_DBG("hostwake GPIO Low");
@@ -361,18 +393,18 @@ static void bluesleep_hostwake_task(unsigned long data)
 	} else {
 		BT_DBG("hostwake GPIO High");
 	}
-#else /* CONFIG_LGE_BLUESLEEP */
+#else /*                      */
 	if (gpio_get_value(bsi->host_wake))
 		bluesleep_rx_busy();
 	else
 		bluesleep_rx_idle();
-#endif /* CONFIG_LGE_BLUESLEEP */
-/* LG_BTUI : chanha.park@lge.com : Enable Bluesleep-[E] */
+#endif /*                      */
+/*                                                      */
 
 	spin_unlock(&rw_lock);
 }
 
-/* LG_BTUI : chanha.park@lge.com : Enable Bluesleep-[S] */
+/*                                                      */
 #ifndef CONFIG_LGE_BLUESLEEP
 /**
  * Handles proper timer action when outgoing data is delivered to the
@@ -434,8 +466,8 @@ static int bluesleep_hci_event(struct notifier_block *this,
 
 	return NOTIFY_DONE;
 }
-#endif /* CONFIG_LGE_BLUESLEEP */
-/* LG_BTUI : chanha.park@lge.com : Enable Bluesleep-[E] */
+#endif /*                      */
+/*                                                      */
 
 /**
  * Handles transmission timer expiration.
@@ -449,7 +481,7 @@ static void bluesleep_tx_timer_expire(unsigned long data)
 
 	BT_DBG("Tx timer expired");
 
-/* LG_BTUI : chanha.park@lge.com : Enable Bluesleep-[S] */
+/*                                                      */
 #ifdef CONFIG_LGE_BLUESLEEP
 	/* already asleep, this is an error case */
 	if (test_bit(BT_ASLEEP, &flags)) {
@@ -459,7 +491,7 @@ static void bluesleep_tx_timer_expire(unsigned long data)
 	}
 
 	bluesleep_tx_idle();
-#else/*CONFIG_LGE_BLUESLEEP*/
+#else/*                    */
 	/* were we silent during the last timeout? */
 	if (!test_bit(BT_TXDATA, &flags)) {
 		BT_DBG("Tx has been idle");
@@ -472,8 +504,8 @@ static void bluesleep_tx_timer_expire(unsigned long data)
 
 	/* clear the incoming data flag */
 	clear_bit(BT_TXDATA, &flags);
-#endif /* CONFIG_LGE_BLUESLEEP */
-/* LG_BTUI : chanha.park@lge.com : Enable Bluesleep-[E] */
+#endif /*                      */
+/*                                                      */
 
 	spin_unlock_irqrestore(&rw_lock, irq_flags);
 }
@@ -486,13 +518,17 @@ static void bluesleep_tx_timer_expire(unsigned long data)
  */
 static irqreturn_t bluesleep_hostwake_isr(int irq, void *dev_id)
 {
-/* BEGIN: 0019639 chanha.park@lge.com 2012-09-09 */
+/*                                               */
 /* MOD: 0019639: [F200][BT] Support Bluetooth low power mode */
 #ifdef CONFIG_LGE_BLUESLEEP
 	/* schedule a tasklet to handle the change in the host wake line */
 	int ext_wake, host_wake;
 
+//BT_S : [CONBT-952] Remove duplicate bluesleep log
+#ifndef REMOVE_DUPLICATE_BT_LOG
 	BT_INFO("");
+#endif
+//BT_E : [CONBT-952] Remove duplicate bluesleep log
 
 	ext_wake = gpio_get_value(bsi->ext_wake);
 	host_wake = gpio_get_value(bsi->host_wake);
@@ -501,13 +537,17 @@ static irqreturn_t bluesleep_hostwake_isr(int irq, void *dev_id)
 	irq_set_irq_type(irq, host_wake ? IRQF_TRIGGER_LOW : IRQF_TRIGGER_HIGH);
 
 	if (host_wake == 0)	{
-		BT_DBG("bluesleep_hostwake_isr : Registration Tasklet");
+//BT_S : [CONBT-952] Remove duplicate bluesleep log
+#ifndef REMOVE_DUPLICATE_BT_LOG
+		BT_DBG("Registration Tasklet");
+#endif
+//BT_E : [CONBT-952] Remove duplicate bluesleep log
 		tasklet_schedule(&hostwake_task);
 	}
-#else /* CONFIG_LGE_BLUESLEEP */
+#else /*                      */
 	tasklet_schedule(&hostwake_task);
-#endif /* CONFIG_LGE_BLUESLEEP */
-/* END: 0019639 chanha.park@lge.com 2012-09-09 */
+#endif /*                      */
+/*                                             */
 
 	return IRQ_HANDLED;
 }
@@ -538,7 +578,7 @@ static int bluesleep_start(void)
 		return -EBUSY;
 	}
 
-/* BEGIN: 0019639 chanha.park@lge.com 2012-06-16 */
+/*                                               */
 /* DEL: 0019639: [F200][BT] Support Bluetooth low power mode */
 #ifndef CONFIG_LGE_BLUESLEEP
 	/* start the timer */
@@ -546,8 +586,8 @@ static int bluesleep_start(void)
 
 	/* assert BT_WAKE */
 	gpio_set_value(bsi->ext_wake, 0);
-#endif /* CONFIG_LGE_BLUESLEEP */
-/* END: 0019639 chanha.park@lge.com 2012-06-16 */
+#endif /*                      */
+/*                                             */
 
 #ifdef BT_DMA_QOS_REQUEST
 	if(bsi->dma_qos_request == NOT_REQUESTED) {
@@ -556,26 +596,30 @@ static int bluesleep_start(void)
 	}
 #endif /* BT_DMA_QOS_REQUEST */
 
-/* BEGIN: 0019639 chanha.park@lge.com 2012-06-16 */
+/*                                               */
 /* ADD: 0019639: [F200][BT] Support Bluetooth low power mode */
 #ifdef CONFIG_LGE_BLUESLEEP
+//BT_S : [CONBT-952] Remove duplicate bluesleep log
+#ifndef REMOVE_DUPLICATE_BT_LOG
 	BT_DBG("bluesleep_start");
+#endif
+//BT_E : [CONBT-952] Remove duplicate bluesleep log
 	hsuart_power(1);
-#endif /* CONFIG_LGE_BLUESLEEP */
-/* END: 0019639 chanha.park@lge.com 2012-06-16 */
+#endif /*                      */
+/*                                             */
 
-/* BEGIN: 0019639 chanha.park@lge.com 2012-09-09 */
+/*                                               */
 /* MOD: 0019639: [F200][BT] Support Bluetooth low power mode */
 #ifdef CONFIG_LGE_BLUESLEEP
 	retval = request_irq(bsi->host_wake_irq, bluesleep_hostwake_isr,
 				IRQF_DISABLED | IRQF_TRIGGER_LOW,
 				"bluetooth hostwake", NULL);
-#else /* CONFIG_LGE_BLUESLEEP */
+#else /*                      */
 	retval = request_irq(bsi->host_wake_irq, bluesleep_hostwake_isr,
 				IRQF_DISABLED | IRQF_TRIGGER_FALLING,
 				"bluetooth hostwake", NULL);
-#endif /* CONFIG_LGE_BLUESLEEP */
-/* END: 0019639 chanha.park@lge.com 2012-09-09 */
+#endif /*                      */
+/*                                             */
 
 	if (retval  < 0) {
 		BT_ERR("Couldn't acquire BT_HOST_WAKE IRQ");
@@ -591,20 +635,20 @@ static int bluesleep_start(void)
 
 	set_bit(BT_PROTO, &flags);
 
-/* BEGIN: 0019639 chanha.park@lge.com 2012-06-16 */
+/*                                               */
 /* ADD: 0019639: [F200][BT] Support Bluetooth low power mode */
 #ifdef CONFIG_LGE_BLUESLEEP
 	wake_lock(&bsi->wake_lock);
-#endif /* CONFIG_LGE_BLUESLEEP */
-//END: 0019639 chanha.park@lge.com 2012-06-16
+#endif /*                      */
+//                                           
 	return 0;
 fail:
-/* BEGIN: 0019639 chanha.park@lge.com 2012-06-16 */
+/*                                               */
 /* DEL: 0019639: [F200][BT] Support Bluetooth low power mode */
 #ifndef CONFIG_LGE_BLUESLEEP
 	del_timer(&tx_timer);
-#endif /* CONFIG_LGE_BLUESLEEP */
-/* END: 0019639 chanha.park@lge.com 2012-06-16 */
+#endif /*                      */
+/*                                             */
 	atomic_inc(&open_count);
 
 	return retval;
@@ -629,31 +673,31 @@ static void bluesleep_stop(int uart_off)
 		return;
 	}
 
-/* LG_BTUI : chanha.park@lge.com : Enable Bluesleep-[S] */
+/*                                                      */
 #ifdef CONFIG_LGE_BLUESLEEP
 	del_timer(&tx_timer);
-#else /* CONFIG_LGE_BLUESLEEP */
+#else /*                      */
 	/* assert BT_WAKE */
 	gpio_set_value(bsi->ext_wake, 0);
 	del_timer(&tx_timer);
-#endif /* CONFIG_LGE_BLUESLEEP */
-/* LG_BTUI : chanha.park@lge.com : Enable Bluesleep-[E] */
+#endif /*                      */
+/*                                                      */
 
 	clear_bit(BT_PROTO, &flags);
 
 	if (test_bit(BT_ASLEEP, &flags)) {
 		clear_bit(BT_ASLEEP, &flags);
-/* BEGIN: 0019639 chanha.park@lge.com 2012-06-16 */
+/*                                               */
 /* ADD: 0019639: [F200][BT] Support Bluetooth low power mode */
 #ifndef CONFIG_LGE_BLUESLEEP
 		hsuart_power(1);
-#endif /* CONFIG_LGE_BLUESLEEP */
-/* END: 0019639 chanha.park@lge.com 2012-06-16 */
+#endif /*                      */
+/*                                             */
 	}
-/* LGE_CHANGE_S, [BT][younghyun.kwon@lge.com], 2013-04-12, Configuration bluesleep for A1 LPM */
+/*                                                                                            */
 /* To avoid L2 error crash that occurs when 'msm_hs_tx_empty'is executed in clock_off state. */
 #if 1
-/* BEGIN: 0019639 chanha.park@lge.com 2012-06-16 */
+/*                                               */
 /* ADD: 0019639: [F200][BT] Support Bluetooth low power mode */
 #ifdef CONFIG_LGE_BLUESLEEP	
 	else
@@ -673,10 +717,10 @@ static void bluesleep_stop(int uart_off)
 		//hsuart_power(0);
 //BT_E : [PSIX-6850] LPM_SLEEP_MODE_DO_NOT_UART_CLOSE
 	}
-#endif /*CONFIG_LGE_BLUESLEEP*/
-/* END: 0019639 chanha.park@lge.com 2012-06-16 */
+#endif /*                    */
+/*                                             */
 #endif
-/* LGE_CHANGE_S, [BT][younghyun.kwon@lge.com], 2013-04-12 */
+/*                                                        */
 
 	atomic_inc(&open_count);
 
@@ -692,12 +736,12 @@ static void bluesleep_stop(int uart_off)
 	}
 #endif /* BT_DMA_QOS_REQUEST */
 	
-/* BEGIN: 0019639 chanha.park@lge.com 2012-06-16 */
+/*                                               */
 /* ADD: 0019639: [F200][BT] Support Bluetooth low power mode */
 #ifdef CONFIG_LGE_BLUESLEEP
 	wake_lock_timeout(&bsi->wake_lock, HZ / 2);
-#endif /* CONFIG_LGE_BLUESLEEP */
-/* END: 0019639 chanha.park@lge.com 2012-06-16 */
+#endif /*                      */
+/*                                             */
 }
 /**
  * Read the <code>BT_WAKE</code> GPIO pin value via the proc interface.
@@ -733,7 +777,11 @@ static int bluepower_write_proc_btwake(struct file *file, const char *buffer,
 {
 	char *buf;
 
+//BT_S : [CONBT-952] Remove duplicate bluesleep log
+#ifndef REMOVE_DUPLICATE_BT_LOG
 	BT_INFO("");
+#endif
+//BT_E : [CONBT-952] Remove duplicate bluesleep log
 
 	if (count < 1)
 		return -EINVAL;
@@ -750,21 +798,21 @@ static int bluepower_write_proc_btwake(struct file *file, const char *buffer,
 	if (buf[0] == '0') {
 		BT_DBG("BT WAKE Set to Wake");
 		gpio_set_value(bsi->ext_wake, 0);
-/* BEGIN: 0019639 chanha.park@lge.com 2012-06-16 */
+/*                                               */
 /* ADD: 0019639: [F200][BT] Support Bluetooth low power mode */
 #ifdef CONFIG_LGE_BLUESLEEP
 		bluesleep_sleep_wakeup();
-#endif /* CONFIG_LGE_BLUESLEEP */
-/* END: 0019639 chanha.park@lge.com 2012-06-16 */
+#endif /*                      */
+/*                                             */
 	} else if (buf[0] == '1') {
 		BT_DBG("BT WAKE Set to Sleep");
 		gpio_set_value(bsi->ext_wake, 1);
-/* BEGIN: 0019639 chanha.park@lge.com 2012-06-16 */
+/*                                               */
 /* ADD: 0019639: [F200][BT] Support Bluetooth low power mode */
 #ifdef CONFIG_LGE_BLUESLEEP
 		bluesleep_tx_idle();
-#endif /* CONFIG_LGE_BLUESLEEP */
-/* END: 0019639 chanha.park@lge.com 2012-06-16 */
+#endif /*                      */
+/*                                             */
 	} else {
 		kfree(buf);
 		return -EINVAL;
@@ -880,7 +928,7 @@ static int bluesleep_write_proc_proto(struct file *file, const char *buffer,
 	return count;
 }
 
-/* LGE_CHANGE_S, [BT][younghyun.kwon@lge.com], 2013-04-10, Configuration bluesleep for A1 LPM */
+/*                                                                                            */
 #ifdef CONFIG_LGE_BLUESLEEP
 void bluesleep_forced_stop(void) {
 	BT_DBG("");
@@ -1003,13 +1051,13 @@ static int __init bluesleep_probe(struct platform_device *pdev)
 	}
 	BT_DBG("host_wake_irq: %d", bsi->host_wake_irq);
 
-/* BEGIN: 0019639 chanha.park@lge.com 2012-06-16 */
+/*                                               */
 /* ADD: 0019639: [F200][BT] Support Bluetooth low power mode */
 #ifdef CONFIG_LGE_BLUESLEEP
 	bsi->uport= msm_hs_get_bt_uport(BT_PORT_ID);
 	wake_lock_init(&bsi->wake_lock, WAKE_LOCK_SUSPEND, "bluesleep");
-#endif /* CONFIG_LGE_BLUESLEEP */
-/* END: 0019639 chanha.park@lge.com 2012-06-16 */
+#endif /*                      */
+/*                                             */
 
 #ifdef BT_DMA_QOS_REQUEST
 	bsi->dma_qos_request = NOT_REQUESTED;
@@ -1029,7 +1077,7 @@ free_bsi:
 	return ret;
 }
 
-#else /* CONFIG_LGE_BLUESLEEP */
+#else /*                      */
 
 static int __init bluesleep_probe(struct platform_device *pdev)
 {
@@ -1091,8 +1139,8 @@ free_bsi:
 	kfree(bsi);
 	return ret;
 }
-#endif /* CONFIG_LGE_BLUESLEEP */
-/* LGE_CHANGE_E, [BT][younghyun.kwon@lge.com], 2013-04-10 */
+#endif /*                      */
+/*                                                        */
 
 static int bluesleep_remove(struct platform_device *pdev)
 {
@@ -1111,12 +1159,12 @@ static int bluesleep_remove(struct platform_device *pdev)
 
 	gpio_free(bsi->host_wake);
 	gpio_free(bsi->ext_wake);
-/* BEGIN: 0019639 chanha.park@lge.com 2012-06-16 */
+/*                                               */
 /* ADD: 0019639: [F200][BT] Support Bluetooth low power mode */
 #ifdef CONFIG_LGE_BLUESLEEP
 	wake_lock_destroy(&bsi->wake_lock);
-#endif /* CONFIG_LGE_BLUESLEEP */
-/* END: 0019639 chanha.park@lge.com 2012-06-16 */
+#endif /*                      */
+/*                                             */
 	kfree(bsi);
 	return 0;
 }
@@ -1126,11 +1174,11 @@ static struct platform_driver bluesleep_driver = {
 	.driver = {
 		.name = "bluesleep",
 		.owner = THIS_MODULE,
-/* LGE_CHANGE_S, [BT][younghyun.kwon@lge.com], 2013-04-10, Configuration bluesleep for A1 LPM */
+/*                                                                                            */
 #ifdef CONFIG_LGE_BLUESLEEP
 		.of_match_table = bluesleep_match_table,
-#endif /* CONFIG_LGE_BLUESLEEP */
-/* LGE_CHANGE_E, [BT][younghyun.kwon@lge.com], 2013-04-10 */
+#endif /*                      */
+/*                                                        */
 	},
 };
 
@@ -1213,12 +1261,12 @@ static int __init bluesleep_init(void)
 	/* initialize host wake tasklet */
 	tasklet_init(&hostwake_task, bluesleep_hostwake_task, 0);
 
-/* BEGIN: 0019639 chanha.park@lge.com 2012-06-16 */
+/*                                               */
 /* ADD: 0019639: [F200][BT] Support Bluetooth low power mode */
 #ifndef CONFIG_LGE_BLUESLEEP
 	hci_register_notifier(&hci_event_nblock);
-#endif /* CONFIG_LGE_BLUESLEEP */
-/* END: 0019639 chanha.park@lge.com 2012-06-16 */
+#endif /*                      */
+/*                                             */
 
 	return 0;
 
@@ -1239,12 +1287,12 @@ static void __exit bluesleep_exit(void)
 {
 	BT_INFO("");
 
-/* BEGIN: 0019639 chanha.park@lge.com 2012-06-16 */
+/*                                               */
 /* ADD: 0019639: [F200][BT] Support Bluetooth low power mode */
 #ifndef CONFIG_LGE_BLUESLEEP
 	hci_unregister_notifier(&hci_event_nblock);
-#endif /* CONFIG_LGE_BLUESLEEP */
-/* END: 0019639 chanha.park@lge.com 2012-06-16 */
+#endif /*                      */
+/*                                             */
 	platform_driver_unregister(&bluesleep_driver);
 
 	remove_proc_entry("asleep", sleep_dir);

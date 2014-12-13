@@ -34,10 +34,19 @@
 #define F12_HOVERING_FINGER_STATUS	(0x05)
 #define F12_GLOVED_FINGER_STATUS	(0x06)
 
-#define S3621	0
-#define S3528_A0	1
-#define S3528_A1	2
-#define S3528_A1_SUN	3
+#define OBJECT_FINGER_BIT		0
+#define OBJECT_STYLUS_BIT		1
+#define OBJECT_PALM_BIT			2
+#define OBJECT_UNCLASSIFIED_OBJECT_BIT	3
+#define OBJECT_HOVERING_FINGER_BIT	4
+#define OBJECT_GLOVEED_FINGER_BIT	5
+#define OBJECT_NARROW_OBJECT_SWIPE_BIT	6
+#define OBJECT_HAND_EDGE_BUT		7
+
+#define S3621           0
+#define S3528_A0        1
+#define S3528_A1        2
+#define S3528_A1_SUN    3
 
 struct function_descriptor {
 	u8 	query_base;
@@ -51,6 +60,16 @@ struct function_descriptor {
 struct ts_ic_function {
 	struct function_descriptor dsc;
 	u8 	function_page;
+};
+
+struct synaptics_ts_f12_ctrl_23 {
+	union {
+		struct {
+			unsigned char obj_type_enable;
+			unsigned char max_reported_objects;
+		};
+		unsigned char data[2];
+	};
 };
 
 struct finger_data {
@@ -117,6 +136,7 @@ struct palm_data {
 struct synaptics_ts_data {
 	u8	is_probed;
 	u8	is_init;
+	u8	object_report;
 	struct lpwg_control	lpwg_ctrl;
 	struct lpwg_password_data	pw_data;
 	struct regulator	*regulator_vdd;

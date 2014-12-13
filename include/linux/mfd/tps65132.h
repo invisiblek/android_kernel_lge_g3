@@ -41,4 +41,8 @@ struct tps65132 {
 	struct tps65132_platform_data *pdata;
 };
 
+extern int tps65132_read_byte(struct tps65132 *tps65132, u8 reg, u8 *read);
+extern int tps65132_write_byte(struct tps65132 *tps65132, u8 reg, u8 data);
+extern int tps65132_update_bits(struct tps65132 *tps65132, u8 reg, u8 mask, u8 data);
+extern int tps65132_regulate_voltage(int on, int mode);
 #endif

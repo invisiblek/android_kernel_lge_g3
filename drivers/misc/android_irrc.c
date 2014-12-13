@@ -175,6 +175,7 @@ static void android_irrc_enable_pwm(struct timed_irrc_data *irrc, int PWM_CLK, i
     }
 
     cancel_delayed_work_sync(&irrc->gpio_off_work); //android_irrc_disable_pwm
+    //clk_disable_unprepare(irrc->gp_clk);
     if((PWM_CLK == 0) || (duty == 100)){
         INFO_MSG("gpio set to high!!!\n");
 
@@ -222,7 +223,10 @@ static void android_irrc_disable_pwm(struct work_struct *work)
 
     } else {
         //android_irrc_set_pwm(0,38,30); //no need
-        clk_disable_unprepare(irrc->gp_clk);
+        do {
+            //INFO_MSG("get_clk_count(irrc->gp_clk) = %d\n", get_clk_count(irrc->gp_clk));
+            clk_disable_unprepare(irrc->gp_clk);
+        } while( get_clk_count(irrc->gp_clk) > 0 );
     }
 }
 

@@ -43,6 +43,7 @@
 
 #include <linux/kthread.h>
 #include <linux/freezer.h>
+#include <linux/ratelimit.h>
 
 #include "ext4.h"
 #include "ext4_extents.h"
@@ -658,10 +659,10 @@ void __ext4_abort(struct super_block *sb, const char *function,
 			jbd2_journal_abort(EXT4_SB(sb)->s_journal, -EIO);
 		save_error_info(sb, function, line);
 	#ifdef CONFIG_MACH_LGE
-	/* LGE_CHANGE
-	 * put panic when ext4 partition is remounted as Read Only
-	 * 2014-04-15, B2-BSP-FS@lge.com
-	 */
+	/*           
+                                                           
+                                 
+  */
 	panic("EXT4-fs panic from previous error. remounted as RO \n");
 	#endif
 
@@ -678,7 +679,7 @@ void ext4_msg(struct super_block *sb, const char *prefix, const char *fmt, ...)
 	va_start(args, fmt);
 	vaf.fmt = fmt;
 	vaf.va = &args;
-	printk("%sEXT4-fs (%s): %pV\n", prefix, sb->s_id, &vaf);
+	printk_ratelimited("%sEXT4-fs (%s): %pV\n", prefix, sb->s_id, &vaf);
 	va_end(args);
 }
 
@@ -3692,9 +3693,9 @@ cantfind_ext4:
 	if (!silent)
 		ext4_msg(sb, KERN_ERR, "VFS: Can't find ext4 filesystem");
 #ifdef CONFIG_MACH_LGE
-/* LGE_CHANGE
- * add return code if ext4 superblock is damaged
- * 2014-01-16, B2-BSP-FS@lge.com
+/*           
+                                                
+                                
  */
 	ret = -ESUPER;
 #endif

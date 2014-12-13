@@ -24,9 +24,9 @@
 /* Fixed constants first: */
 #undef NR_OPEN
 #ifdef CONFIG_MACH_LGE
-/* LGE_UPDATE
- * Increase maximum-open-file-number.
- * 2014-03-31, B2-BSP-FS@lge.com
+/*           
+                                     
+                                
  */
 #define INR_OPEN_CUR 2048	/* Initial setting for nfile rlimits */
 #else
@@ -2444,6 +2444,7 @@ enum {
 void dio_end_io(struct bio *bio, int error);
 void inode_dio_wait(struct inode *inode);
 void inode_dio_done(struct inode *inode);
+struct inode *dio_bio_get_inode(struct bio *bio);
 
 ssize_t __blockdev_direct_IO(int rw, struct kiocb *iocb, struct inode *inode,
 	struct block_device *bdev, const struct iovec *iov, loff_t offset,

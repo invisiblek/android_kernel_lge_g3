@@ -39,6 +39,16 @@ config LGE_MMC_BKOPS_ENABLE
 	help
 	  If you want to use BKOPS for eMMC, you have to set Y in kernel/arch/arm/configs/XXXX_defconfig file.
 
+# LGE_CHANGE_S : bohyun.jung@lge.com
+config LGE_MMC_DYNAMIC_LOG
+    bool "MMC debugging - enable logs through adb"
+    default n
+    help
+        If you say Y here, developers can enable/disable mmc logs through adb
+        by accessing /sys/module/mmc_core/parameters/debug_level
+        ex. echo {debug_level} > /sys/module/mmc_core/parameters/debug_level
+# LGE_CHANGE_E : bohyun.jung@lge.com
+
 if MMC
 
 source "drivers/mmc/core/Kconfig"

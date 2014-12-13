@@ -629,6 +629,16 @@ static int set_config(struct usb_composite_dev *cdev,
 	unsigned		power = gadget_is_otg(gadget) ? 8 : 100;
 	int			tmp;
 
+	/*
+	 * ignore 2nd time SET_CONFIGURATION
+	 * only for same config value twice.
+	 */
+	if (cdev->config && (cdev->config->bConfigurationValue == number)) {
+		DBG(cdev, "already in the same config with value %d\n",
+				number);
+		return 0;
+	}
+
 	if (number) {
 		list_for_each_entry(c, &cdev->configs, list) {
 			if (c->bConfigurationValue == number) {
@@ -1677,7 +1687,7 @@ static void composite_debugfs_init(struct usb_composite_dev	*cdev)
 
 	debugfs_create_file("desc", 0444, dent, cdev, &debug_desc_ops);
 }
-#endif /* CONFIG_USB_G_LGE_ANDROID && CONFIG_DEBUG_FS */
+#endif /*                                             */
 
 static int composite_bind(struct usb_gadget *gadget)
 {
@@ -1805,14 +1815,7 @@ composite_suspend(struct usb_gadget *gadget)
 
 	cdev->suspended = 1;
 
-#if defined(CONFIG_LGE_PM) && defined(CONFIG_DWC3_MSM_BC_12_VZW_SUPPORT)
-	if (!lge_get_factory_cable()) {
-#if defined (CONFIG_SLIMPORT_ANX7816) || defined(CONFIG_SLIMPORT_ANX7808)
-	if (!slimport_is_connected())
-#endif
-	usb_gadget_vbus_draw(gadget, 2);
-	}
-#elif !defined(CONFIG_LGE_PM)
+#ifndef CONFIG_LGE_PM
 	usb_gadget_vbus_draw(gadget, 2);
 #endif
 }

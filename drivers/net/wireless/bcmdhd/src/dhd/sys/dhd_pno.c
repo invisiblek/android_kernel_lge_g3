@@ -22,8 +22,9 @@
  * software in any way with any other Broadcom software provided under a license
  * other than the GPL, without Broadcom's express prior written consent.
  *
- * $Id: dhd_pno.c 445963 2014-01-02 06:58:48Z $
+ * $Id: dhd_pno.c 423669 2013-09-18 13:01:55Z yangj$
  */
+#ifdef PNO_SUPPORT
 #include <typedefs.h>
 #include <osl.h>
 
@@ -91,7 +92,6 @@ is_dfs(uint16 channel)
 	else
 		return FALSE;
 }
-
 int
 dhd_pno_clean(dhd_pub_t *dhd)
 {
@@ -736,7 +736,7 @@ _dhd_pno_add_bssid(dhd_pub_t *dhd, wl_pfn_bssid_t *p_pfn_bssid, int nbssid)
 	if (nbssid) {
 		NULL_CHECK(p_pfn_bssid, "bssid list is NULL", err);
 	}
-	err = dhd_iovar(dhd, 0, "pfn_add_bssid", (char *)&p_pfn_bssid,
+	err = dhd_iovar(dhd, 0, "pfn_add_bssid", (char *)p_pfn_bssid,
 		sizeof(wl_pfn_bssid_t) * nbssid, 1);
 	if (err < 0) {
 		DHD_ERROR(("%s : failed to execute pfn_cfg\n", __FUNCTION__));
@@ -1889,3 +1889,4 @@ int dhd_pno_deinit(dhd_pub_t *dhd)
 	dhd->pno_state = NULL;
 	return err;
 }
+#endif /* PNO_SUPPORT */

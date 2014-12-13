@@ -921,7 +921,7 @@ static void __print_wakeup_source_active_stats(struct wakeup_source *ws,
 				ktime_to_ms(max_time), ktime_to_ms(ws->last_time),
 				ktime_to_ms(prevent_sleep_time));
 	else
-		snprintf(buf, BUF_MAX, " \b");
+		strncpy(buf, "", BUF_MAX);
 
 	spin_unlock_irqrestore(&ws->lock, flags);
 }

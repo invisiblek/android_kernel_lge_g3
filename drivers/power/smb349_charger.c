@@ -849,7 +849,7 @@ static int smb349_get_prop_batt_health(struct smb349_struct *smb349_chg)
 	int batt_temp;
 	batt_temp = smb349_get_prop_batt_temp(smb349_chg);
 
-	/* TODO : implements LGE charing scenario */
+	/*                                        */
 	if (batt_temp >= 550)
 		return POWER_SUPPLY_HEALTH_OVERHEAT;
 	if (batt_temp <= -100)
@@ -3116,11 +3116,11 @@ static int smb349_batt_power_get_property(struct power_supply *psy,
 #endif
 		break;
 	case POWER_SUPPLY_PROP_SYSTEM_TEMP_LEVEL:
-		/* it makes ibat max set following themral mitigation.
-		 * But, SMB349 cannot control ibat current like PMIC.
-		 * if LGE charging scenario make charging thermal control,
-		 * it is good interface to use LG mitigation level.
-		 */
+		/*                                                    
+                                                       
+                                                            
+                                                     
+   */
 		val->intval = 0;
 		break;
 	case POWER_SUPPLY_PROP_PSEUDO_BATT:
@@ -3239,11 +3239,11 @@ static int smb349_batt_power_set_property(struct power_supply *psy,
 		smb349_enable_charging(smb349_chg, val->intval);
 		break;
 	case POWER_SUPPLY_PROP_SYSTEM_TEMP_LEVEL:
-		/* it makes ibat max set following themral mitigation.
-		 * But, SMB349 cannot control ibat current like PMIC.
-		 * if LGE charging scenario make charging thermal control,
-		 * it is good interface to use LG mitigation level.
-		 */
+		/*                                                    
+                                                       
+                                                            
+                                                     
+   */
 		break;
 	default:
 		return -EINVAL;
@@ -3711,7 +3711,7 @@ static int __devinit smb349_probe(struct i2c_client *client,
 			if (smb349_chg->otg_en_gpio < 0) {
 /* Todo check below commit after bring-up LAF mode
  * Change-Id: I0f2352dc17eb08ec00d67f1a64f3979090ef4db3 */
-			//if (smb349_chg->otg_en_gpio < 0 && lge_get_laf_mode() != LGE_LAF_MODE_LAF) {
+			//                                                                            
 				printk("Unable to get named gpio for otg_en_gpio.\n");
 				return smb349_chg->otg_en_gpio;
 			}
@@ -3805,7 +3805,7 @@ static int __devinit smb349_probe(struct i2c_client *client,
 		if (ret) {
 /* Todo check below commit after bring-up LAF mode
  * Change-Id: I0f2352dc17eb08ec00d67f1a64f3979090ef4db3 */
-		//if (ret && lge_get_laf_mode() != LGE_LAF_MODE_LAF) {
+		//                                                    
 			printk("otg_en_gpio gpio_request failed for %d ret=%d\n",
 				   smb349_chg->otg_en_gpio, ret);
 			goto stat_gpio_fail;

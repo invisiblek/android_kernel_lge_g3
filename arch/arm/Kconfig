@@ -2282,6 +2282,10 @@ config KEXEC_HB_PAGE_ADDR
 	hex "Kexec hardboot page address"
 	depends on KEXEC_HARDBOOT
 
+config KEXEC_HB_KERNEL_LOC
+	hex "Kexec hardboot kernel location"
+	depends on KEXEC_HARDBOOT
+
 config CRASH_DUMP
 	bool "Build kdump crash kernel (EXPERIMENTAL)"
 	depends on EXPERIMENTAL

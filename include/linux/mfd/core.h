@@ -38,6 +38,12 @@ struct mfd_cell {
 	size_t			pdata_size;
 
 	/*
+	 * Device Tree compatible string
+	 * See: Documentation/devicetree/usage-model.txt Chapter 2.2 for details
+	 */
+	const char              *of_compatible;
+
+	/*
 	 * These resources can be specified relative to the parent device.
 	 * For accessing hardware you should use resources from the platform dev
 	 */

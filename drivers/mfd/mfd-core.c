@@ -18,6 +18,9 @@
 #include <linux/pm_runtime.h>
 #include <linux/slab.h>
 #include <linux/module.h>
+#ifdef CONFIG_MACH_LGE
+#include <linux/of.h>
+#endif
 
 int mfd_cell_enable(struct platform_device *pdev)
 {
@@ -78,6 +81,9 @@ static int mfd_add_device(struct device *parent, int id,
 	struct platform_device *pdev;
 	int ret = -ENOMEM;
 	int r;
+#ifdef CONFIG_MACH_LGE
+	struct device_node *np = NULL;
+#endif
 
 	pdev = platform_device_alloc(cell->name, id + cell->id);
 	if (!pdev)
@@ -88,6 +94,17 @@ static int mfd_add_device(struct device *parent, int id,
 		goto fail_device;
 
 	pdev->dev.parent = parent;
+
+#ifdef CONFIG_MACH_LGE
+	if (parent->of_node && cell->of_compatible) {
+		for_each_child_of_node(parent->of_node, np) {
+			if (of_device_is_compatible(np, cell->of_compatible)) {
+				pdev->dev.of_node = np;
+				break;
+			}
+		}
+	}
+#endif
 
 	if (cell->pdata_size) {
 		ret = platform_device_add_data(pdev,

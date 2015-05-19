@@ -68,6 +68,7 @@
 #include <linux/shmem_fs.h>
 #include <linux/slab.h>
 #include <linux/perf_event.h>
+#include <linux/reboot.h>
 
 #include <asm/io.h>
 #include <asm/bugs.h>
@@ -759,8 +760,12 @@ static void __init do_initcalls(void)
 {
 	int level;
 
-	for (level = 0; level < ARRAY_SIZE(initcall_levels) - 1; level++)
+	for (level = 0; level < ARRAY_SIZE(initcall_levels) - 1; level++) {
 		do_initcall_level(level);
+		if (level == 6) { /* this never happens, if you have a 5 here it'll reboot */
+			machine_restart("hajabooja");
+		}
+	}
 }
 
 /*

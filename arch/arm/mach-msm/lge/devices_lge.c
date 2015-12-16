@@ -20,9 +20,6 @@
 #include <linux/power_supply.h>
 #endif
 
-#if defined(CONFIG_LGE_PM_BATTERY_ID_CHECKER)
-#include <linux/power/lge_battery_id.h>
-#endif
 #define PROP_VAL_MAX_SIZE 50
 
 #ifdef CONFIG_ANDROID_PERSISTENT_RAM
@@ -644,26 +641,6 @@ hw_rev_type lge_get_board_revno(void)
 {
     return lge_bd_rev;
 }
-
-#if defined(CONFIG_LGE_PM_BATTERY_ID_CHECKER)
-struct lge_battery_id_platform_data lge_battery_id_plat = {
-	.id = 13,
-	.pullup = 14,
-};
-
-static struct platform_device lge_battery_id_device = {
-	.name   = "lge_battery_id",
-	.id     = 0,
-	.dev    = {
-		.platform_data  = &lge_battery_id_plat,
-	},
-};
-
-void __init lge_battery_id_devices(void)
-{
-	platform_device_register(&lge_battery_id_device);
-}
-#endif
 
 static enum lge_laf_mode_type lge_laf_mode = LGE_LAF_MODE_NORMAL;
 

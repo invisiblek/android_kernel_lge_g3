@@ -169,7 +169,7 @@ extern int lge_get_bootreason(void);
 
 void xo_therm_logging(void);
 
-#if defined(CONFIG_ANDROID_RAM_CONSOLE)
+#ifdef CONFIG_ANDROID_RAM_CONSOLE
 #define LGE_RAM_CONSOLE_SIZE (128 * SZ_1K * 2)
 #endif
 
@@ -177,7 +177,7 @@ void __init lge_reserve(void);
 void __init lge_add_persistent_device(void);
 
 
-#if defined(CONFIG_ANDROID_PERSISTENT_RAM)
+#ifdef CONFIG_ANDROID_PERSISTENT_RAM
 void __init lge_add_persist_ram_devices(void);
 #endif
 
@@ -188,11 +188,7 @@ void gpio_debug_print(void);
 void __init lge_add_qfprom_devices(void);
 #endif
 
-#if defined(CONFIG_LGE_PM_BATTERY_ID_CHECKER)
-void __init lge_battery_id_devices(void);
-#endif
-
-#if defined(CONFIG_LGE_KSWITCH)
+#ifdef CONFIG_LGE_KSWITCH
 #define LGE_KSWITCH_UART_DISABLE     0x1 << 3
 int lge_get_kswitch_status(void);
 #endif

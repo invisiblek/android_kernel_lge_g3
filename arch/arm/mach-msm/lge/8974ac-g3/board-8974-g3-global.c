@@ -124,13 +124,8 @@ void __init msm8974_add_drivers(void)
 #ifdef CONFIG_LGE_QFPROM_INTERFACE
 	lge_add_qfprom_devices();
 #endif
-/* LGE_CHANGE_S, [WiFi][jaewoo.hwang@lge.com], 2013-01-28, Wifi Bring Up */
-#if defined (CONFIG_BCMDHD) || defined (CONFIG_BCMDHD_MODULE)
+#ifdef CONFIG_BCMDHD
 	init_bcm_wifi();
-#endif
-/* LGE_CHANGE_E, [WiFi][jaewoo.hwang@lge.com], 2013-01-28, Wifi Bring Up */
-#if defined(CONFIG_LGE_PM_BATTERY_ID_CHECKER)
-	lge_battery_id_devices();
 #endif
 #ifdef CONFIG_USB_G_LGE_ANDROID
 	lge_add_android_usb_devices();

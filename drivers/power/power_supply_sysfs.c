@@ -271,9 +271,6 @@ static struct device_attribute power_supply_attrs[] = {
 	POWER_SUPPLY_ATTR(scope),
 	POWER_SUPPLY_ATTR(system_temp_level),
 	POWER_SUPPLY_ATTR(resistance),
-#ifdef CONFIG_LGE_PM_BATTERY_ID_CHECKER
-	POWER_SUPPLY_ATTR(valid_batt_id),
-#endif
 #ifdef CONFIG_LGE_PM
 	PSEUDO_BATT_ATTR(pseudo_batt),
 	POWER_SUPPLY_ATTR(ext_pwr),

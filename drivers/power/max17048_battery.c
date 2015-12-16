@@ -129,11 +129,6 @@ static struct max17048_chip *ref;
 int lge_power_test_flag = 1;
 #endif
 
-#ifdef CONFIG_LGE_PM_BATTERY_ID_CHECKER
-/* using to cal rcomp */
-int cell_info;
-#endif
-
 static int max17048_write_word(struct i2c_client *client, int reg, u16 value)
 {
 	int ret;
@@ -261,31 +256,6 @@ static int max17048_get_capacity_from_soc(void)
 	batt_soc /= 10000000;
 
 	batt_soc = max17048_capacity_evaluator((int)batt_soc);
-#ifdef CONFIG_LGE_UPSCALING_LOW_SOC
-#ifdef CONFIG_LGE_PM_BATTERY_ID_CHECKER
-	/* Report 0.42%(0x300) ~ 1% to 1% */
-	/* If Full and Emplty is changed, need to modify the value, 3 */
-	else if (batt_soc == 0 && buf[0] >= 3) {
-		if (cell_info == LGC_LLL && buf[0] >= 3) {
-			printk(KERN_ERR "%s : buf[0] is %d, upscale to 1%%\n"
-				, __func__, buf[0]);
-			batt_soc = 1;
-		} else if (cell_info == TCD_AAC && buf[0] >= 6) {
-			printk(KERN_ERR "%s : buf[0] is %d, upscale to 1%%\n"
-				, __func__, buf[0]);
-			batt_soc = 1;
-		}
-	}
-#else
-	/* Report 0.42%(0x300) ~ 1% to 1% */
-	/* If Full and Emplty is changed, need to modify the value, 3 */
-	else if (batt_soc == 0 && buf[0] >= 3) {
-		printk(KERN_ERR "%s : buf[0] is %d, upscale to 1%%\n"
-				, __func__, buf[0]);
-		batt_soc = 1;
-	}
-#endif
-#endif
 	return batt_soc;
 }
 #endif
@@ -1038,27 +1008,6 @@ static int max17048_parse_dt(struct device *dev,
 	rc = of_property_read_u32(dev_node, "max17048,full_design",
 			&mdata->full_design);
 
-#ifdef CONFIG_LGE_PM_BATTERY_ID_CHECKER
-	if (cell_info == LGC_LLL) {
-		rc = of_property_read_u32(dev_node, "max17048,rcomp_lgc",
-				&mdata->rcomp);
-		rc = of_property_read_u32(dev_node, "max17048,temp_co_hot_lgc",
-				&mdata->temp_co_hot);
-		rc = of_property_read_u32(dev_node, "max17048,temp_co_cold_lgc",
-				&mdata->temp_co_cold);
-		rc = of_property_read_u32(dev_node, "max17048,empty_lgc",
-				&mdata->empty);
-	} else if (cell_info == TCD_AAC) {
-		rc = of_property_read_u32(dev_node, "max17048,rcomp_tcd",
-				&mdata->rcomp);
-		rc = of_property_read_u32(dev_node, "max17048,temp_co_hot_tcd",
-				&mdata->temp_co_hot);
-		rc = of_property_read_u32(dev_node, "max17048,temp_co_cold_tcd",
-				&mdata->temp_co_cold);
-		rc = of_property_read_u32(dev_node, "max17048,empty_tcd",
-				&mdata->empty);
-	}
-#else
 	rc = of_property_read_u32(dev_node, "max17048,rcomp",
 			&mdata->rcomp);
 	rc = of_property_read_u32(dev_node, "max17048,temp_co_hot",
@@ -1067,7 +1016,6 @@ static int max17048_parse_dt(struct device *dev,
 			&mdata->temp_co_cold);
 	rc = of_property_read_u32(dev_node, "max17048,empty",
 			&mdata->empty);
-#endif
 
 	printk(KERN_INFO "[MAX17048] platform data : "\
 		"rcomp = %d, "\
@@ -1112,18 +1060,6 @@ static int __devinit max17048_probe(struct i2c_client *client,
 			ref = NULL;
 			return 0;
 		}
-#ifdef CONFIG_LGE_PM_BATTERY_ID_CHECKER
-		 else if (_batt_id_ == BATT_DS2704_L
-			|| _batt_id_ == BATT_ISL6296_C) {
-			cell_info = LGC_LLL; /* LGC Battery */
-		} else if (_batt_id_ == BATT_DS2704_C
-			|| _batt_id_ == BATT_ISL6296_L) {
-			cell_info = TCD_AAC; /* Tocad, Hitachi Battery */
-		} else {
-			printk(KERN_INFO "[MAX17048] probe : Unknown cell, Using LGC profile\n");
-			cell_info = LGC_LLL;
-		}
-#endif
 	}
 
 #else
@@ -1133,18 +1069,6 @@ static int __devinit max17048_probe(struct i2c_client *client,
 			ref = NULL;
 			return 0;
 		}
-#ifdef CONFIG_LGE_PM_BATTERY_ID_CHECKER
-		 else if (*batt_id == BATT_DS2704_L
-			|| *batt_id == BATT_ISL6296_C) {
-			cell_info = LGC_LLL; /* LGC Battery */
-		} else if (*batt_id == BATT_DS2704_C
-			|| *batt_id == BATT_ISL6296_L) {
-			cell_info = TCD_AAC; /* Tocad, Hitachi Battery */
-		} else {
-			printk(KERN_INFO "[MAX17048] probe : Unknown cell, Using LGC profile\n");
-			cell_info = LGC_LLL;
-		}
-#endif
 	}
 #endif
 #endif

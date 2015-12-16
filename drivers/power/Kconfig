@@ -532,12 +532,6 @@ config MAX17048_FUELGAUGE
 	  in handheld and portable equipment. The MAX17048 is configured
 	  to operate with a single lithium cell
 
-config LGE_PM_BATTERY_ID_CHECKER
-	tristate "Virtual Device for LGE Battery ID Checker"
-	default n
-	help
-	  Say Y here to enable LGE Battery ID Checker
-
 config LGE_CURRENTNOW
 	bool "Virtual Device for LGE current now reading"
 	default n

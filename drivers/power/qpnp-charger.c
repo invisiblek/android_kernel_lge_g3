@@ -47,10 +47,6 @@
 #define MONITOR_BATTEMP_POLLING_PERIOD          (60*HZ)
 #endif
 
-#if defined(CONFIG_LGE_PM_BATTERY_ID_CHECKER)
-#include <linux/power/lge_battery_id.h>
-#endif
-
 #include <linux/spinlock.h>
 #include <linux/gpio.h>
 #include <linux/of_gpio.h>
@@ -435,9 +431,6 @@ struct qpnp_chg_chip {
 	int 			vbatdet_lo_cnt;
 	bool			Is_first_chg_en;
 	bool 		factory_chg_disable;
-#endif
-#if defined(CONFIG_LGE_PM_BATTERY_ID_CHECKER)
-	int batt_id_smem;
 #endif
 #ifdef CONFIG_LGE_CHARGER_TEMP_SCENARIO
 	struct delayed_work 	battemp_work;
@@ -2566,9 +2559,6 @@ static enum power_supply_property msm_batt_power_props[] = {
 	POWER_SUPPLY_PROP_PSEUDO_BATT,
 	POWER_SUPPLY_PROP_EXT_PWR_CHECK,
 #endif
-#ifdef CONFIG_LGE_PM_BATTERY_ID_CHECKER
-	POWER_SUPPLY_PROP_BATTERY_ID_CHECKER,
-#endif
 };
 
 static char *pm_power_supplied_to[] = {
@@ -3248,14 +3238,6 @@ qpnp_batt_power_get_property(struct power_supply *psy,
 		break;
 	case POWER_SUPPLY_PROP_EXT_PWR_CHECK:
 		val->intval = lge_pm_get_cable_type();
-		break;
-#endif
-#if defined(CONFIG_LGE_PM_BATTERY_ID_CHECKER)
-	case POWER_SUPPLY_PROP_BATTERY_ID_CHECKER:
-		if (is_factory_cable() &&  qpnp_chg_is_usb_chg_plugged_in(chip))
-			val->intval = 1;
-		else
-			val->intval = chip->batt_id_smem;
 		break;
 #endif
 	default:
@@ -6068,12 +6050,6 @@ qpnp_charger_probe(struct spmi_device *spmi)
 	struct resource *resource;
 	struct spmi_resource *spmi_resource;
 	int rc = 0;
-#if defined(CONFIG_LGE_PM_BATTERY_ID_CHECKER)
-	uint *smem_batt = 0;
-#if defined(CONFIG_LGE_LOW_BATT_LIMIT)
-	uint _smem_batt_ = 0;
-#endif
-#endif
 #ifdef CONFIG_LGE_PM
 	unsigned int *p_cable_type = (unsigned int *)
 		(smem_get_entry(SMEM_ID_VENDOR1, &cable_smem_size));
@@ -6396,32 +6372,6 @@ qpnp_charger_probe(struct spmi_device *spmi)
 			qpnp_usbin_health_check_work);
 	INIT_WORK(&chip->soc_check_work, qpnp_chg_soc_check_work);
 	INIT_DELAYED_WORK(&chip->aicl_check_work, qpnp_aicl_check_work);
-
-#if defined(CONFIG_LGE_PM_BATTERY_ID_CHECKER)
-	smem_batt = (uint *)smem_alloc(SMEM_BATT_INFO, sizeof(smem_batt));
-	if (smem_batt == NULL) {
-		pr_err("%s : smem_alloc returns NULL\n", __func__);
-		chip->batt_id_smem = 0;
-	} else {
-#if defined(CONFIG_LGE_LOW_BATT_LIMIT)
-		_smem_batt_ = (*smem_batt >> 8) & 0x00ff; /* batt id -> HSB */
-		pr_info("Battery was read in sbl is = %d\n", _smem_batt_);
-		if (_smem_batt_ == BATT_ID_DS2704_L ||
-			_smem_batt_ == BATT_ID_DS2704_C ||
-			_smem_batt_ == BATT_ID_ISL6296_L ||
-			_smem_batt_ == BATT_ID_ISL6296_C)
-#else
-		pr_info("Battery was read in sbl is = %d\n", *smem_batt);
-		if (*smem_batt == BATT_ID_DS2704_L ||
-			*smem_batt == BATT_ID_DS2704_C ||
-			*smem_batt == BATT_ID_ISL6296_L ||
-			*smem_batt == BATT_ID_ISL6296_C)
-#endif
-			chip->batt_id_smem = 1;
-		else
-			chip->batt_id_smem = 0;
-	}
-#endif
 
 	if (chip->dc_chgpth_base) {
 		chip->dc_psy.name = "qpnp-dc";

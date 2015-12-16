@@ -283,6 +283,4 @@ config LGE_BLUESLEEP
 	  LGE Bluetooth sleep driver.
 	  This driver provides support for LGE BT Sleep.
 
-source drivers/bluetooth/broadcom/Kconfig
-
 endmenu

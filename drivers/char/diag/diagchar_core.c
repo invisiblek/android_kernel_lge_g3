@@ -1451,11 +1451,6 @@ exit:
 		wake_up(&driver->smd_wait_q);
 	}
 
-#ifdef CONFIG_USB_G_LGE_ANDROID_DIAG_OSP_SUPPORT
-	driver->diag_read_status = 1;
-	wake_up_interruptible(&driver->diag_read_wait_q);
-#endif
-
 	return ret;
 }
 

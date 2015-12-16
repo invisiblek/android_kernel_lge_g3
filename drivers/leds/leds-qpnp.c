@@ -420,7 +420,7 @@ struct mpp_config_data {
  */
 struct flash_config_data {
 	u8	current_prgm;
-#if defined(CONFIG_LGE_DUAL_LED)
+#ifdef CONFIG_LGE_DUAL_LED
 	u8	current_prgm2;
 #endif
 	u8	clamp_curr;
@@ -519,6 +519,10 @@ static struct pwm_device *kpdbl_master;
 static u32 kpdbl_master_period_us;
 DECLARE_BITMAP(kpdbl_leds_in_use, NUM_KPDBL_LEDS);
 static bool is_kpdbl_master_turn_on;
+
+#ifdef CONFIG_MACH_LGE
+static struct mutex led_sequence_lock;
+#endif
 
 static int
 qpnp_led_masked_write(struct qpnp_led_data *led, u16 addr, u8 mask, u8 val)
@@ -1006,11 +1010,6 @@ static int qpnp_flash_set(struct qpnp_led_data *led)
 	/* ADDED CODE, END */
 #endif //CONFIG_LGE_PM_CHARGING_CHARGER_TEMP
 
-#if defined(CONFIG_MACH_LGE)
-	pr_info("%s: %d: name = %s, val = %d\n",
-		__func__, __LINE__, led->cdev.name, val);
-#endif
-
 	if (led->flash_cfg->torch_enable)
 		led->flash_cfg->current_prgm =
 			(val * TORCH_MAX_LEVEL / led->max_current);
@@ -1365,7 +1364,7 @@ error_flash_set:
 	return rc;
 }
 
-#if defined(CONFIG_LGE_DUAL_LED)
+#ifdef CONFIG_LGE_DUAL_LED
 static int qpnp_flash_set2(struct qpnp_led_data *led)
 {
 	int rc, error;
@@ -1971,7 +1970,7 @@ static int qpnp_rgb_set(struct qpnp_led_data *led)
 	return 0;
 }
 
-#if defined(CONFIG_LGE_DUAL_LED)
+#ifdef CONFIG_LGE_DUAL_LED
 static void qpnp_led_set2(struct led_classdev *led_cdev,
 				enum led_brightness value, enum led_brightness value2)
 {
@@ -2009,7 +2008,13 @@ static void qpnp_led_set(struct led_classdev *led_cdev,
 	if (value > led->cdev.max_brightness)
 		value = led->cdev.max_brightness;
 
+#ifdef CONFIG_MACH_LGE
+	mutex_lock(&led_sequence_lock);
+#endif
 	led->cdev.brightness = value;
+#ifdef CONFIG_MACH_LGE
+	mutex_unlock(&led_sequence_lock);
+#endif
 
 	if (led->in_order_command_processing)
 		queue_work(led->workqueue, &led->work);
@@ -2036,7 +2041,7 @@ static void __qpnp_led_work(struct qpnp_led_data *led,
 		break;
 	case QPNP_ID_FLASH1_LED0:
 	case QPNP_ID_FLASH1_LED1:
-#if defined(CONFIG_LGE_DUAL_LED)
+#ifdef CONFIG_LGE_DUAL_LED
 		if (led->flash_cfg->torch_enable)
 			rc = qpnp_flash_set2(led);
 		else
@@ -2082,14 +2087,16 @@ static void qpnp_led_work(struct work_struct *work)
 	struct qpnp_led_data *led = container_of(work,
 					struct qpnp_led_data, work);
 
-#if defined(CONFIG_MACH_LGE)
+#ifdef CONFIG_MACH_LGE
 	switch(led->id) {
 		case QPNP_ID_FLASH1_LED0:
 		case QPNP_ID_FLASH1_LED1:
 			__qpnp_led_work(led, led->cdev.brightness);
 			break;
 		default:
+			mutex_lock(&led_sequence_lock);
 			__qpnp_led_work(led, led->cdev.brightness);
+			mutex_unlock(&led_sequence_lock);
 			break;
 	}
 #else
@@ -3058,7 +3065,7 @@ static int __devinit qpnp_flash_init(struct qpnp_led_data *led)
 		return rc;
 	}
 
-#if defined(CONFIG_MACH_LGE)
+#ifdef CONFIG_MACH_LGE
 	/* Enable VPH_PWR_DROOP and set threshold to 2.9V (0xC2) */
 	rc = qpnp_led_masked_write(led, FLASH_VPH_PWR_DROOP(led->base),
 					FLASH_VPH_PWR_DROOP_MASK, 0xC2);
@@ -3859,245 +3866,6 @@ static int __devinit qpnp_get_config_rgb(struct qpnp_led_data *led,
 	return 0;
 }
 
-#if defined(CONFIG_LEDS_KEY_REAR)
-void set_kpdbl_pattern(int pattern)
-{
-	int previous_pattern = 0;
-
-	int duty_pcts_kpdbl35[30] = {
-			14, 17, 18, 21, 23, 25, 27, 29, 31, 34,
-			36, 38, 40, 42, 44, 46, 48, 51, 53, 55,
-			57, 59, 61, 64, 66, 68, 70, 71, 71, 71};
-
-	int duty_pcts_kpdbl_36[30] = {
-			0, 170, 165, 158, 150, 138, 124, 109, 92, 73,
-			53, 32, 0, 0, 0, 0, 170, 165, 158, 150,
-			138, 124, 109, 92, 73, 53, 32, 0, 0, 0,};
-
-	int duty_pcts_kpdbl_missed_noti[30] = {
-			0, 170, 165, 158, 150, 138, 124, 109, 92, 73, 53, 32, 0, 0, 0,
-			0, 170, 165, 158, 150, 138, 124, 109, 92, 73, 53, 32, 0, 0, 0};
-
-	int duty_pcts_kpdbl_urgent_call_missed_noti[30] = {
-			0, 170, 158, 138, 109, 73, 32, 0, 0, 0,
-			0, 170, 158, 138, 109, 73, 32, 0, 0, 0,
-			0, 170, 158, 138, 109, 73, 32, 0, 0, 0};
-
-	struct lut_params kpdbl_lut_params;
-
-	if (pattern > 1000) {
-		previous_pattern = pattern;
-		pattern = pattern - 1000;
-	} else if ((pattern >= KPDBL_ID_MISSED_NOTI_PINK && pattern <= KPDBL_ID_MISSED_NOTI_YELLOW) ||
-            (pattern >= KPDBL_ID_MISSED_NOTI_TURQUOISE && pattern <= KPDBL_ID_MISSED_NOTI_LIME)) {
-               previous_pattern = pattern;
-               pattern = KPDBL_ID_MISSED_NOTI;
-	}
-
-	if (previous_pattern)
-		printk(KERN_INFO "[REAR LED] set_kpdbl_pattern() is_kpdbl_on : %d, pattern : %d -> %d \n",
-		is_kpdbl_on, previous_pattern, pattern);
-	else
-		printk(KERN_INFO "[REAR LED] set_kpdbl_pattern() is_kpdbl_on : %d, pattern : %d \n",
-		is_kpdbl_on, pattern);
-
-	if (!pattern) {
-		pwm_disable(kpdbl_lpg1->kpdbl_cfg->pwm_cfg->pwm_dev);
-		pwm_disable(kpdbl_lpg2->kpdbl_cfg->pwm_cfg->pwm_dev);
-
-		kpdbl_lpg1->kpdbl_cfg->pwm_cfg->mode = PWM_MODE;
-		kpdbl_lpg1->kpdbl_cfg->pwm_cfg->default_mode = PWM_MODE;
-		kpdbl_lpg2->kpdbl_cfg->pwm_cfg->mode = PWM_MODE;
-		kpdbl_lpg2->kpdbl_cfg->pwm_cfg->default_mode = PWM_MODE;
-
-		qpnp_led_masked_write(kpdbl_lpg1, 0xE3C8, 0x00, 0x00);
-		qpnp_led_masked_write(kpdbl_lpg2, 0xE3C8, 0x00, 0x00);
-
-		is_kpdbl_on = 0;
-	}
-
-	if (pattern == KPDBL_ID_CALLING) {
-		pwm_disable(kpdbl_lpg1->kpdbl_cfg->pwm_cfg->pwm_dev);
-		pwm_disable(kpdbl_lpg2->kpdbl_cfg->pwm_cfg->pwm_dev);
-
-		kpdbl_lpg1->kpdbl_cfg->pwm_cfg->mode = LPG_MODE;
-		kpdbl_lpg1->kpdbl_cfg->pwm_cfg->default_mode = LPG_MODE;
-		kpdbl_lpg2->kpdbl_cfg->pwm_cfg->mode = LPG_MODE;
-		kpdbl_lpg2->kpdbl_cfg->pwm_cfg->default_mode = LPG_MODE;
-
-		kpdbl_lut_params.start_idx = -1;
-		kpdbl_lut_params.idx_len = 30;
-		kpdbl_lut_params.lut_pause_hi = 700;
-		kpdbl_lut_params.lut_pause_lo = 400;
-		kpdbl_lut_params.ramp_step_ms = 24;
-		kpdbl_lut_params.flags = 95;
-
-		pwm_lut_config(kpdbl_lpg1->kpdbl_cfg->pwm_cfg->pwm_dev, 200,
-			duty_pcts_kpdbl35, kpdbl_lut_params);
-		pwm_lut_config(kpdbl_lpg2->kpdbl_cfg->pwm_cfg->pwm_dev, 200,
-			duty_pcts_kpdbl35, kpdbl_lut_params);
-
-		pwm_enable(kpdbl_lpg1->kpdbl_cfg->pwm_cfg->pwm_dev);
-		pwm_enable(kpdbl_lpg2->kpdbl_cfg->pwm_cfg->pwm_dev);
-
-		kpdbl_lpg1->cdev.brightness = 127;
-		kpdbl_lpg2->cdev.brightness = 127;
-
-		qpnp_kpdbl_set(kpdbl_lpg1);
-		qpnp_kpdbl_set(kpdbl_lpg2);
-
-		is_kpdbl_on = 1;
-	} else if (pattern == KPDBL_ID_REAR_MISSED_NOTI) {
-		pwm_disable(kpdbl_lpg1->kpdbl_cfg->pwm_cfg->pwm_dev);
-		pwm_disable(kpdbl_lpg2->kpdbl_cfg->pwm_cfg->pwm_dev);
-
-		kpdbl_lpg1->kpdbl_cfg->pwm_cfg->mode = LPG_MODE;
-		kpdbl_lpg1->kpdbl_cfg->pwm_cfg->default_mode = LPG_MODE;
-		kpdbl_lpg2->kpdbl_cfg->pwm_cfg->mode = LPG_MODE;
-		kpdbl_lpg2->kpdbl_cfg->pwm_cfg->default_mode = LPG_MODE;
-
-		kpdbl_lut_params.start_idx = -1;
-		kpdbl_lut_params.idx_len = 30;
-		kpdbl_lut_params.lut_pause_hi = 2280;
-		kpdbl_lut_params.lut_pause_lo = 1000;
-		kpdbl_lut_params.ramp_step_ms = 24;
-		kpdbl_lut_params.flags = 91;
-
-		pwm_lut_config(kpdbl_lpg1->kpdbl_cfg->pwm_cfg->pwm_dev, 200,
-			duty_pcts_kpdbl_36, kpdbl_lut_params);
-		pwm_lut_config(kpdbl_lpg2->kpdbl_cfg->pwm_cfg->pwm_dev, 200,
-			duty_pcts_kpdbl_36, kpdbl_lut_params);
-
-		pwm_enable(kpdbl_lpg1->kpdbl_cfg->pwm_cfg->pwm_dev);
-		pwm_enable(kpdbl_lpg2->kpdbl_cfg->pwm_cfg->pwm_dev);
-
-		kpdbl_lpg1->cdev.brightness = 127;
-		kpdbl_lpg2->cdev.brightness = 127;
-
-		qpnp_kpdbl_set(kpdbl_lpg1);
-		qpnp_kpdbl_set(kpdbl_lpg2);
-
-		is_kpdbl_on = 1;
-	} else if (pattern == KPDBL_ID_MISSED_NOTI) {
-		pwm_disable(kpdbl_lpg1->kpdbl_cfg->pwm_cfg->pwm_dev);
-		pwm_disable(kpdbl_lpg2->kpdbl_cfg->pwm_cfg->pwm_dev);
-
-		kpdbl_lpg1->kpdbl_cfg->pwm_cfg->mode = LPG_MODE;
-		kpdbl_lpg1->kpdbl_cfg->pwm_cfg->default_mode = LPG_MODE;
-		kpdbl_lpg2->kpdbl_cfg->pwm_cfg->mode = LPG_MODE;
-		kpdbl_lpg2->kpdbl_cfg->pwm_cfg->default_mode = LPG_MODE;
-
-		kpdbl_lut_params.start_idx = -1;
-		kpdbl_lut_params.idx_len = 30;
-		kpdbl_lut_params.lut_pause_hi = 11000;
-		kpdbl_lut_params.lut_pause_lo = 500;
-		kpdbl_lut_params.ramp_step_ms = 24;
-		kpdbl_lut_params.flags = 91;
-
-		pwm_lut_config(kpdbl_lpg1->kpdbl_cfg->pwm_cfg->pwm_dev, 200,
-			duty_pcts_kpdbl_missed_noti, kpdbl_lut_params);
-		pwm_lut_config(kpdbl_lpg2->kpdbl_cfg->pwm_cfg->pwm_dev, 200,
-			duty_pcts_kpdbl_missed_noti, kpdbl_lut_params);
-
-		pwm_enable(kpdbl_lpg1->kpdbl_cfg->pwm_cfg->pwm_dev);
-		pwm_enable(kpdbl_lpg2->kpdbl_cfg->pwm_cfg->pwm_dev);
-
-		kpdbl_lpg1->cdev.brightness = 127;
-		kpdbl_lpg2->cdev.brightness = 127;
-
-		qpnp_kpdbl_set(kpdbl_lpg1);
-		qpnp_kpdbl_set(kpdbl_lpg2);
-
-		is_kpdbl_on = 1;
-	} else if (pattern == KPDBL_ID_URGENT_CALL_MISSED_NOTI) {
-		pwm_disable(kpdbl_lpg1->kpdbl_cfg->pwm_cfg->pwm_dev);
-		pwm_disable(kpdbl_lpg2->kpdbl_cfg->pwm_cfg->pwm_dev);
-
-		kpdbl_lpg1->kpdbl_cfg->pwm_cfg->mode = LPG_MODE;
-		kpdbl_lpg1->kpdbl_cfg->pwm_cfg->default_mode = LPG_MODE;
-		kpdbl_lpg2->kpdbl_cfg->pwm_cfg->mode = LPG_MODE;
-		kpdbl_lpg2->kpdbl_cfg->pwm_cfg->default_mode = LPG_MODE;
-
-		kpdbl_lut_params.start_idx = -1;
-		kpdbl_lut_params.idx_len = 30;
-		kpdbl_lut_params.lut_pause_hi = 11000;
-		kpdbl_lut_params.lut_pause_lo = 500;
-		kpdbl_lut_params.ramp_step_ms = 24;
-		kpdbl_lut_params.flags = 91;
-
-		pwm_lut_config(kpdbl_lpg1->kpdbl_cfg->pwm_cfg->pwm_dev, 200,
-			duty_pcts_kpdbl_urgent_call_missed_noti, kpdbl_lut_params);
-		pwm_lut_config(kpdbl_lpg2->kpdbl_cfg->pwm_cfg->pwm_dev, 200,
-			duty_pcts_kpdbl_urgent_call_missed_noti, kpdbl_lut_params);
-
-		pwm_enable(kpdbl_lpg1->kpdbl_cfg->pwm_cfg->pwm_dev);
-		pwm_enable(kpdbl_lpg2->kpdbl_cfg->pwm_cfg->pwm_dev);
-
-		kpdbl_lpg1->cdev.brightness = 127;
-		kpdbl_lpg2->cdev.brightness = 127;
-
-		qpnp_kpdbl_set(kpdbl_lpg1);
-		qpnp_kpdbl_set(kpdbl_lpg2);
-
-		is_kpdbl_on = 1;
-	}
-}
-
-void make_rear_blink_led_pattern(int delay_on, int delay_off)
-{
-	int blink_pattern[4] = { 0, 170, 170, 170};
-	struct lut_params kpdbl_lut_params;
-
-	printk(KERN_INFO "[REAR LED] make_rear_blink_led_pattern %d %d %d\n", is_kpdbl_on, delay_on, delay_off);
-
-	if (is_kpdbl_on == 1) {
-		pwm_disable(kpdbl_lpg1->kpdbl_cfg->pwm_cfg->pwm_dev);
-		pwm_disable(kpdbl_lpg2->kpdbl_cfg->pwm_cfg->pwm_dev);
-
-		kpdbl_lpg1->kpdbl_cfg->pwm_cfg->mode = PWM_MODE;
-		kpdbl_lpg1->kpdbl_cfg->pwm_cfg->default_mode = PWM_MODE;
-		kpdbl_lpg2->kpdbl_cfg->pwm_cfg->mode = PWM_MODE;
-		kpdbl_lpg2->kpdbl_cfg->pwm_cfg->default_mode = PWM_MODE;
-
-		qpnp_led_masked_write(kpdbl_lpg1, 0xE3C8, 0x00, 0x00);
-		qpnp_led_masked_write(kpdbl_lpg2, 0xE3C8, 0x00, 0x00);
-
-		is_kpdbl_on = 0;
-	}
-
-	pwm_disable(kpdbl_lpg1->kpdbl_cfg->pwm_cfg->pwm_dev);
-	pwm_disable(kpdbl_lpg2->kpdbl_cfg->pwm_cfg->pwm_dev);
-
-	kpdbl_lpg1->kpdbl_cfg->pwm_cfg->mode = LPG_MODE;
-	kpdbl_lpg1->kpdbl_cfg->pwm_cfg->default_mode = LPG_MODE;
-	kpdbl_lpg2->kpdbl_cfg->pwm_cfg->mode = LPG_MODE;
-	kpdbl_lpg2->kpdbl_cfg->pwm_cfg->default_mode = LPG_MODE;
-
-	kpdbl_lut_params.start_idx = -1;
-	kpdbl_lut_params.idx_len = 4;
-	kpdbl_lut_params.lut_pause_hi = delay_on;
-	kpdbl_lut_params.lut_pause_lo = delay_off;
-	kpdbl_lut_params.ramp_step_ms = 24;
-	kpdbl_lut_params.flags = 91;
-
-	pwm_lut_config(kpdbl_lpg1->kpdbl_cfg->pwm_cfg->pwm_dev, 200,
-		blink_pattern, kpdbl_lut_params);
-	pwm_lut_config(kpdbl_lpg2->kpdbl_cfg->pwm_cfg->pwm_dev, 200,
-		blink_pattern, kpdbl_lut_params);
-
-	pwm_enable(kpdbl_lpg1->kpdbl_cfg->pwm_cfg->pwm_dev);
-	pwm_enable(kpdbl_lpg2->kpdbl_cfg->pwm_cfg->pwm_dev);
-
-	kpdbl_lpg1->cdev.brightness = 127;
-	kpdbl_lpg2->cdev.brightness = 127;
-
-	qpnp_kpdbl_set(kpdbl_lpg1);
-	qpnp_kpdbl_set(kpdbl_lpg2);
-
-	is_kpdbl_on = 1;
-}
-#endif
-
 static int __devinit qpnp_get_config_mpp(struct qpnp_led_data *led,
 		struct device_node *node)
 {
@@ -4263,7 +4031,7 @@ static int __devinit qpnp_leds_probe(struct spmi_device *spmi)
 		}
 
 		led->cdev.brightness_set    = qpnp_led_set;
-#if defined(CONFIG_LGE_DUAL_LED)
+#ifdef CONFIG_LGE_DUAL_LED
 		led->cdev.brightness_set2    = qpnp_led_set2;
 #endif
 		led->cdev.brightness_get    = qpnp_led_get;
@@ -4279,7 +4047,7 @@ static int __devinit qpnp_leds_probe(struct spmi_device *spmi)
 				== 0) {
 			if (!of_find_property(node, "flash-boost-supply", NULL))
 				regulator_probe = true;
-#if !defined(CONFIG_QPNP_CHARGER)
+#ifndef CONFIG_QPNP_CHARGER
 				regulator_probe = true;
 #endif
 			rc = qpnp_get_config_flash(led, temp, &regulator_probe);
@@ -4316,6 +4084,10 @@ static int __devinit qpnp_leds_probe(struct spmi_device *spmi)
 			rc = -EINVAL;
 			goto fail_id_check;
 		}
+
+#ifdef CONFIG_MACH_LGE
+		mutex_init(&led_sequence_lock);
+#endif
 
 		if (led->id != QPNP_ID_FLASH1_LED0 &&
 					led->id != QPNP_ID_FLASH1_LED1)

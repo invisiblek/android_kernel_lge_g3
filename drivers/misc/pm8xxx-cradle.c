@@ -40,7 +40,6 @@ struct pm8xxx_cradle {
 static struct workqueue_struct *cradle_wq;
 static struct pm8xxx_cradle *cradle;
 
-#if defined HALLIC_TOUCH_IF
 static int smartcover_status;
 
 int get_smartcover_status(void){
@@ -50,7 +49,6 @@ int get_smartcover_status(void){
 static void set_smartcover_status(int status){
 	smartcover_status = status;
 }
-#endif
 
 static void boot_cradle_det_func(void)
 {
@@ -137,9 +135,7 @@ static void pm8xxx_pouch_work_func(struct work_struct *work)
 	else if (cradle->pouch == 0)
 		state = SMARTCOVER_POUCH_OPENED;
 
-#if defined HALLIC_TOUCH_IF
 	set_smartcover_status(state);
-#endif
 	if (cradle->state != state) {
 		cradle->state = state;
 		spin_unlock_irqrestore(&cradle->lock, flags);

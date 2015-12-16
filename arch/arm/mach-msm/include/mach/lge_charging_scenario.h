@@ -20,8 +20,6 @@
 
 #include <linux/kernel.h>
 
-#define CONFIG_LGE_THERMALE_CHG_CONTROL
-
 #define DC_IUSB_VOLTUV   4000000
 #if defined(CONFIG_BQ24192_CHARGER)
 #define DC_IUSB_CURRENT  500
@@ -73,12 +71,6 @@ struct charging_info {
 	int     batt_temp;
 	int     is_charger;
 	int     current_now;
-#ifdef CONFIG_LGE_THERMALE_CHG_CONTROL
-	int	input_current_ma;
-	int	input_current_te;
-	int     chg_current_ma;
-	int     chg_current_te;
-#endif
 };
 
 struct charging_rsp {

@@ -57,10 +57,6 @@
 
 #define SMD_DRAIN_BUF_SIZE 4096
 
-#ifdef CONFIG_LGE_DM_APP
-#include "lg_dm_tty.h"
-#endif
-
 int diag_debug_buf_idx;
 unsigned char diag_debug_buf[1024];
 /* Number of entries in table of buffers */
@@ -540,11 +536,6 @@ err:
 	     driver->logging_mode == MEMORY_DEVICE_MODE)
 		diag_ws_on_read(0);
 
-#ifdef CONFIG_LGE_DM_APP
-    if (driver->logging_mode == DM_APP_MODE)
-        diag_ws_on_read(0);
-#endif
-
 	return 0;
 }
 
@@ -583,15 +574,6 @@ void diag_smd_queue_read(struct diag_smd_info *smd_info)
 			diag_ws_on_read(0);
 		return;
 	}
-
-#ifdef CONFIG_LGE_DM_APP
-	if (driver->logging_mode == MEMORY_DEVICE_MODE && smd_info->type == SMD_DATA_TYPE)
-		diag_ws_on_notify();
-
-	if (driver->logging_mode == DM_APP_MODE && smd_info->type == SMD_DATA_TYPE)
-		diag_ws_on_notify();
-#endif
-
 }
 
 static int diag_smd_resize_buf(struct diag_smd_info *smd_info, void **buf,
@@ -820,12 +802,6 @@ void diag_smd_send_req(struct diag_smd_info *smd_info)
 		     driver->logging_mode == MEMORY_DEVICE_MODE)
 			diag_ws_on_read(total_recd);
 
-#ifdef CONFIG_LGE_DM_APP
-        if (smd_info->type == SMD_DATA_TYPE &&
-            driver->logging_mode == DM_APP_MODE)
-            diag_ws_on_read(pkt_len);
-#endif
-
 		if (total_recd > 0) {
 			if (!buf) {
 				pr_err("diag: In %s, SMD peripheral: %d, Out of diagmem for Modem\n",
@@ -849,20 +825,6 @@ void diag_smd_send_req(struct diag_smd_info *smd_info)
 	} else if (smd_info->ch && !buf &&
 		(driver->logging_mode == MEMORY_DEVICE_MODE)) {
 			chk_logging_wakeup();
-#ifdef CONFIG_LGE_DM_APP
-    } else if (smd_info->ch && (driver->logging_mode == DM_APP_MODE)) {
-		chk_logging_wakeup();
-		if( buf != NULL && smd_info->in_busy_1 == 0){
-			smd_info->in_busy_1 = 1;
-		}
-		else if(buf != NULL && smd_info->in_busy_2 == 0){
-			smd_info->in_busy_2 = 1;
-		}
-
-		lge_dm_tty->set_logging = 1;
-		wake_up_interruptible(&lge_dm_tty->waitq);
-#endif
-
 	} else {
 		if ((smd_info->type == SMD_DATA_TYPE ||
 		     smd_info->type == SMD_CMD_TYPE) &&
@@ -877,12 +839,6 @@ fail_return:
 	     smd_info->type == SMD_CMD_TYPE) &&
 	     driver->logging_mode == MEMORY_DEVICE_MODE)
 		diag_ws_on_read(0);
-
-#ifdef CONFIG_LGE_DM_APP
-    if (smd_info->type == SMD_DATA_TYPE &&
-        driver->logging_mode == DM_APP_MODE)
-        diag_ws_on_read(0);
-#endif
 
 	if (smd_info->type == SMD_DCI_TYPE ||
 					smd_info->type == SMD_DCI_CMD_TYPE)
@@ -1129,36 +1085,6 @@ int diag_device_write(void *buf, int data_type, struct diag_request *write_ptr)
 		APPEND_DEBUG('d');
 	}
 #endif /* DIAG OVER USB */
-
-#ifdef CONFIG_LGE_DM_APP
-	if (driver->logging_mode == DM_APP_MODE) {
-		/* only diag cmd #250 for supporting testmode tool */
-		if (data_type == APPS_DATA) {
-			driver->write_ptr_svc = (struct diag_request *)
-			(diagmem_alloc(driver, sizeof(struct diag_request),
-				 POOL_TYPE_WRITE_STRUCT));
-			if (driver->write_ptr_svc) {
-				driver->write_ptr_svc->length = driver->used;
-				driver->write_ptr_svc->buf = buf;
-
-				queue_work(lge_dm_tty->dm_wq,
-					&(lge_dm_tty->dm_usb_work));
-				flush_work(&(lge_dm_tty->dm_usb_work));
-
-			} else {
-				err = -1;
-			}
-
-			return err;
-
-		}
-
-		lge_dm_tty->set_logging = 1;
-		wake_up_interruptible(&lge_dm_tty->waitq);
-
-	}
-#endif
-
     return err;
 }
 
@@ -2048,23 +1974,6 @@ int diagfwd_connect(void)
 	int err;
 	int i;
 
-#ifdef CONFIG_LGE_DM_APP
-	if (driver->logging_mode == DM_APP_MODE) {
-		printk(KERN_DEBUG "diag: USB connected in DM_APP_MODE\n");
-		driver->usb_connected = 1;
-
-		err = usb_diag_alloc_req(driver->legacy_ch, N_LEGACY_WRITE,
-				N_LEGACY_READ);
-		if (err)
-			printk(KERN_ERR "diag: unable to alloc USB req on legacy ch");
-
-		/* Poll USB channel to check for data*/
-		queue_work(driver->diag_wq, &(driver->diag_read_work));
-
-		return 0;
-	}
-#endif
-
 	printk(KERN_DEBUG "diag: USB connected\n");
 	err = usb_diag_alloc_req(driver->legacy_ch,
 			(driver->supports_separate_cmdrsp ?
@@ -2103,15 +2012,6 @@ int diagfwd_disconnect(void)
 	int i;
 	unsigned long flags;
 	struct diag_smd_info *smd_info = NULL;
-
-#ifdef CONFIG_LGE_DM_APP
-	if (driver->logging_mode == DM_APP_MODE) {
-		printk(KERN_DEBUG "diag: USB disconnected in DM_APP_MODE\n");
-		driver->usb_connected = 0;
-
-		return 0;
-	}
-#endif
 
 	printk(KERN_DEBUG "diag: USB disconnected\n");
 	driver->usb_connected = 0;
@@ -2242,27 +2142,6 @@ int diagfwd_read_complete(struct diag_request *diag_read_ptr)
 				queue_work(driver->diag_wq,
 						 &(driver->diag_read_work));
 		}
-
-#ifdef CONFIG_LGE_DM_APP
-		if (driver->logging_mode == DM_APP_MODE) {
-            if((*(buf) == 0xEF) && (*(buf + 1) == 0x00)) {
-                queue_work(lge_dm_tty->dm_wq,
-                    &(lge_dm_tty->dm_dload_work));
-
-                mutex_lock(&driver->diagchar_mutex);
-                driver->logging_mode = USB_MODE;
-                mutex_unlock(&driver->diagchar_mutex);
-            }
-
-			if (status != -ECONNRESET && status != -ESHUTDOWN)
-				queue_work(driver->diag_wq,
-					&(driver->diag_proc_hdlc_work));
-			else
-				queue_work(driver->diag_wq,
-						 &(driver->diag_read_work));
-		}
-#endif
-
 	}
 #ifdef CONFIG_DIAG_SDIO_PIPE
 	else if (buf == (void *)driver->usb_buf_mdm_out) {

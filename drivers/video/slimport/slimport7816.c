@@ -57,13 +57,10 @@ static bool irq_enable;
 /* to access global platform data */
 static struct anx7816_platform_data *g_pdata;
 
-/* LGE_CHANGE,
- * to apply High voltage to HDMI_SWITCH_EN
+/* Apply High voltage to HDMI_SWITCH_EN
  * which can select MHL or SlimPort on LGPS11
  * this feature should be enable only when board has hdmi switch chip.
- * 2012-10-31, jihyun.seong@lge.com
  */
-/* #define USE_HDMI_SWITCH */
 #define TRUE 1
 #define FALSE 0
 #ifdef USE_HDMI_SWITCH
@@ -168,10 +165,6 @@ bool slimport_is_check(void)
 }
 EXPORT_SYMBOL(slimport_is_check);
 
-/* LGE_CHANGE,
- * power control
- * 2012-10-17, jihyun.seong@lge.com
- */
 static int slimport7816_avdd_power(unsigned int onoff)
 {
 #ifdef CONFIG_OF
@@ -1055,10 +1048,6 @@ static void anx7816_work_func(struct work_struct *work)
 #endif
 }
 
-/* LGE_CHANGE,
- * add device tree parsing functions
- * 2012-10-17, jihyun.seong@lge.com
- */
 #ifdef CONFIG_OF
 int anx7816_regulator_configure(
 	struct device *dev, struct anx7816_platform_data *pdata)

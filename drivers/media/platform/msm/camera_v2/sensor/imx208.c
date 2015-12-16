@@ -218,14 +218,10 @@ static int32_t imx208_platform_probe(struct platform_device *pdev)
 	const struct of_device_id *match;
 	CDBG("%s E\n", __func__);
 	match = of_match_device(imx208_dt_match, &pdev->dev);
-
-/* LGE_CHANGE_S : WBT, 2013-5-31, jonghwan.ko@lge.com */
-	if(!match)
-	{
+	if (!match) {
 		pr_err(" %s failed ",__func__);
-	      return -ENODEV;
+		return -ENODEV;
 	}
-/* LGE_CHANGE_E : WBT, 2013-5-31, jonghwan.ko@lge.com */
 
 	rc = msm_sensor_platform_probe(pdev, match->data);
 	CDBG("%s: X, rc = %d\n", __func__, rc);

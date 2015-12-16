@@ -547,11 +547,9 @@ struct mtp_ext_config_desc_function {
 
 #ifndef CONFIG_USB_G_LGE_MULTIPLE_CONFIGURATION
 #ifdef NOT_CONFIG_USB_G_LGE_ANDROID
-/* LGE_CHANGE
- * MS Ext Desciptor for MTP and adb (to use in testing driver).
+/* MS Ext Desciptor for MTP and adb (to use in testing driver).
  * NOTE: this remains for reference code about MTP setting with ADB enabled.
  * Therefore we do not use this officially(so NOT_ prefix is used).
- * 2011-02-09, hyunhui.park@lge.com
  */
 
 /* MTP Extended Configuration Descriptor */

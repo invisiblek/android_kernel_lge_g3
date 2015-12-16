@@ -169,8 +169,6 @@
 	};
 
 	// IRRC (BLSP 2 UART 6). UART6 For IRRC
-	//  LGE_CHANGE_S, [IRRC][daegeun.yoon@lge.com], 2014-01-09, IRRC Bring up for B2
-
         serial@f9962000 {
                 compatible = "qcom,msm-lsuart-v14";
                 reg = <0xf9962000 0x100>;

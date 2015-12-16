@@ -1771,11 +1771,9 @@ int dsi_panel_device_register(struct device_node *pan_node,
 		pr_err("%s:%d, reset gpio not specified\n",
 						__func__, __LINE__);
 	} else {
-		/* LGE_CHANGE
-		 * gpio request once in booting time
+		/* gpio request once in booting time
 		 * to meet gpio request/free pair
-		 * only when conitnous splash on
-		 * 2014-08-07, baryun.hwang@lge.com
+		 * only when continuous splash on
 		 */
 		if (pinfo->cont_splash_enabled) {
 			rc = gpio_request(ctrl_pdata->rst_gpio, "disp_rst_n");

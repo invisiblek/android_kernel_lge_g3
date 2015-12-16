@@ -216,11 +216,6 @@ static ssize_t nforce_val_store(struct device *dev, struct device_attribute *att
 
 static DEVICE_ATTR(nforce_timed, S_IRUGO | S_IWUSR, nforce_val_show, nforce_val_store);
 
-#if 1
-/* LGE_CHANGED_START
-  * Vibrator on/off device file is added(vib_enable)
-  * 2012.11.11, sehwan.lee@lge.com
-  */
 static int val = 0;
 
 static ssize_t
@@ -259,9 +254,6 @@ immersion_enable_show(struct device *dev, struct device_attribute *attr,   char 
 static struct device_attribute immersion_device_attrs[] = {
 	__ATTR(vib_enable,  S_IRUGO | S_IWUSR, immersion_enable_show, immersion_enable_store),
 };
-
-/* LGE_CHANGED_END 2012.11.11, sehwan.lee@lge.com */
-#endif
 
 static int __init tspdrv_init(void)
 {
@@ -302,19 +294,14 @@ static int __init tspdrv_init(void)
     {
         DbgOut((DBL_ERROR, "tspdrv: platform_driver_register failed.\n"));
     }
-#if 1
-/* LGE_CHANGED_START
-  * Vibrator on/off device file is added(vib_enable)
-  * 2012.11.11, sehwan.lee@lge.com
-  */
-	for (i = 0; i < ARRAY_SIZE(immersion_device_attrs); i++) {
-			nRet = device_create_file(miscdev.this_device, &immersion_device_attrs[i]);
-			if (nRet)
-				return nRet;
-	}
 
-/* LGE_CHANGED_END 2012.11.11, sehwan.lee@lge.com */
-#endif
+    for (i = 0; i < ARRAY_SIZE(immersion_device_attrs); i++)
+    {
+        nRet = device_create_file(miscdev.this_device, &immersion_device_attrs[i]);
+        if (nRet)
+            return nRet;
+    }
+
     DbgRecorderInit(());
 
     ImmVibeSPI_ForceOut_Initialize();

@@ -25,19 +25,15 @@
 	        status = "ok";
 	};
 
-	//  LGE_CHANGE_S, [IRRC][daegeun.yoon@lge.com], 2014-01-09, IRRC Bring up for B2 
         serial@f9962000 {
                 status = "ok";
         };
-	// LGE_CHANGE_S, [IRRC][daegeun.yoon@lge.com], 2014-01-09, IRRC Bring up for B2
 
-	/*  LGE_CHANGE_S, [NFC][seunghoon65.lee@lge.com], 2013-10-09, NFC Bring up for B2 */
 	i2c@f9967000 {
 		pn547@28 {
 			status = "ok";
 		};
 	};
-	/*  LGE_CHANGE_E, [NFC][seunghoon65.lee@lge.com], 2013-10-09, NFC Bring up for B2 */
 
 	sdhc_3: sdhci@f9864900 { /* This is for microSD from rev_evb to rev_a */
 		compatible = "qcom,sdhci-msm";
@@ -146,7 +142,6 @@
 		revision = "rev_b...";
 		status = "ok";
 	};
-	/* LGE_CHANGE, for camera gpio pin, 2014-03-04, yt.kim@lge.com */
 	i2c@f9928000 {
 	status = "disable";
 	};
@@ -156,7 +151,6 @@
 	status = "ok";
 };
 
-/* LGE_CHANGE_S, [WiFi][jaewoo.hwang@lge.com], 2013-01-28, Wifi Bring Up */
 &soc {
 	sdcc2_rev_a: qcom,sdcc_rev_a@f98a4000 {
 		cell-index = <2>; /* SDC2 SD card slot */
@@ -215,4 +209,3 @@
 &sdcc2 {
 	status = "disable";
 };
-/* LGE_CHANGE_E, [WiFi][jaewoo.hwang@lge.com], 2013-01-28, Wifi Bring Up */

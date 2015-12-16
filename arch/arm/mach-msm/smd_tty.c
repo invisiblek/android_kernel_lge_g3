@@ -390,8 +390,7 @@ static void smd_tty_notify(void *priv, unsigned event)
 		tty_kref_put(tty);
 		break;
 #ifdef CONFIG_LGE_USES_SMD_DS_TTY
-	/* LGE_CHANGE
-	 * At current qct smd_tty framework, if smd_tty_open()
+	/* At current qct smd_tty framework, if smd_tty_open()
 	 * is invoked by process before smd_tty_close() is
 	 * completely finished, smd_tty_open() may fail
 	 * because smd_tty_close() does not wait to close smd
@@ -496,8 +495,7 @@ static int smd_tty_port_activate(struct tty_port *tport,
 			}
 		}
 #ifdef CONFIG_LGE_USES_SMD_DS_TTY
-		/* LGE_CHANGE
-		 * on boot, process tried to open smd0 sleeps until
+		/* On boot, process tried to open smd0 sleeps until
 		 * modem is ready or timeout.
 		 */
 		if (n == DS_IDX) {
@@ -604,8 +602,7 @@ static void smd_tty_port_shutdown(struct tty_port *tport)
 
 	smd_close(info->ch);
 #ifdef CONFIG_LGE_USES_SMD_DS_TTY
-	/* LGE_CHANGE
-	 * At current qct smd_tty framework, if smd_tty_open()
+	/* At current qct smd_tty framework, if smd_tty_open()
 	 * is invoked by process before smd_tty_close() is
 	 * completely finished, smd_tty_open() may fail
 	 * because smd_tty_close() does not wait to close smd

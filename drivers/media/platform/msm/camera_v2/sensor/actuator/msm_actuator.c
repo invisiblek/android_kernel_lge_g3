@@ -369,8 +369,9 @@ static int32_t msm_actuator_move_focus(
 #ifndef CONFIG_MACH_LGE
 			target_step_pos = step_boundary;
 #else
-			/* LGE_CHANGE, Prevent the actuator move to boundary
-			 * in case of focus mode changing, 2014-10-16, jt.choi@lge.com */
+			/* Prevent the actuator move to boundary
+			 * in case of focus mode changing
+			 */
 			target_step_pos = dest_step_pos;
 #endif
 			target_lens_pos =
@@ -866,7 +867,7 @@ static unsigned int msm_actuator_StablePosition_delay_calc(int16_t cur_dac, int1
 	else if(delay < 50) delay = 60;
 
 	//return delay;
-	return 0; /* LGE_CHANGE, do not need delay because of checking VCM movement, 2013-06-28, hyungmoo.huh@lge.com */
+	return 0;
 }
 
 static int16_t msm_actuator_StablePosition_pos_calc(int16_t cur_pos)
@@ -912,8 +913,6 @@ static int32_t msm_actuator_StablePosition(struct msm_actuator_ctrl_t *a_ctrl)
 			else if(next_pos == 0)
 			{
 				next_dac = msm_actuator_StablePosition_dac_calc(a_ctrl, next_pos);
-				//rc = msm_actuator_StablePosition_move(a_ctrl, next_dac, IMX135_ACT_HW_DAMPING_LAST, 110);
-				/* LGE_CHANGE, speed up VCM movement , 2013-06-28, hyungmoo.huh@lge.com */
 				rc = msm_actuator_StablePosition_move(a_ctrl, next_dac, IMX135_ACT_HW_DAMPING_FASTEST, delay);
 				if (rc < 0) {
 					pr_err("%s: i2c write error:[1]%d\n",
@@ -976,7 +975,6 @@ static int msm_actuator_close(struct v4l2_subdev *sd,
 			pr_err("cci_init failed\n");
 	}
 #ifdef CONFIG_MACH_LGE
-	/* LGE_CHANGE, Fix memory leak, step_position_table is not freed */
 	if (a_ctrl->step_position_table != NULL) {
 		kfree(a_ctrl->step_position_table);
 		a_ctrl->step_position_table = NULL;
@@ -1036,7 +1034,6 @@ static int32_t msm_actuator_power_up(struct msm_actuator_ctrl_t *a_ctrl)
 		}
 	}
 #ifdef CONFIG_MACH_LGE
-	/* LGE_CHANGE, Fix memory leak, step_position_table is not freed */
 	a_ctrl->actuator_state = ACTUATOR_POWER_UP;
 #endif
 	CDBG("Exit\n");

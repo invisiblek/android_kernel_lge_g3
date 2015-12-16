@@ -172,7 +172,6 @@ static struct of_dev_auxdata msm8974_auxdata_lookup[] __initdata = {
 	{}
 };
 
-/* LGE_CHANGE, yeri.lee@lge.com, 2013-10-31, wm5110 Bring up*/
 #ifdef CONFIG_MFD_WM5110
 static struct slim_device wm5110_slim_audio = {
 	.name = "wm5110-slim-audio",

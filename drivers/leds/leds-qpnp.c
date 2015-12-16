@@ -106,7 +106,7 @@
 #define FLASH_FAULT_DETECT(base)	(base + 0x51)
 #define FLASH_PERIPHERAL_SUBTYPE(base)	(base + 0x05)
 #define FLASH_CURRENT_RAMP(base)	(base + 0x54)
-#define FLASH_VPH_PWR_DROOP(base)	(base + 0x5A) /* LGE_CHANGE, Change FLASH_VPH_PWR_DROOP, 2014-02-04, jinw.kim@lge.com */
+#define FLASH_VPH_PWR_DROOP(base)	(base + 0x5A)
 
 #define FLASH_MAX_LEVEL			0x4F
 #define TORCH_MAX_LEVEL			0x0F
@@ -126,8 +126,7 @@
 #define FLASH_VREG_MASK			0xC0
 #define FLASH_STARTUP_DLY_MASK		0x02
 #define FLASH_CURRENT_RAMP_MASK		0xBF
-#define FLASH_VPH_PWR_DROOP_MASK	0xF3 /* LGE_CHANGE, Change FLASH_VPH_PWR_DROOP, 2014-02-04, jinw.kim@lge.com */
-
+#define FLASH_VPH_PWR_DROOP_MASK	0xF3
 
 #define FLASH_ENABLE_ALL		0xE0
 #define FLASH_ENABLE_MODULE		0x80
@@ -422,10 +421,6 @@ struct mpp_config_data {
 struct flash_config_data {
 	u8	current_prgm;
 #if defined(CONFIG_LGE_DUAL_LED)
-/* LGE_CHANGE
- * For Dual flash
- * 2014-01-14, jinw.kim@lge.com
- */
 	u8	current_prgm2;
 #endif
 	u8	clamp_curr;
@@ -1012,10 +1007,6 @@ static int qpnp_flash_set(struct qpnp_led_data *led)
 #endif //CONFIG_LGE_PM_CHARGING_CHARGER_TEMP
 
 #if defined(CONFIG_MACH_LGE)
-/* LGE_CHANGE
- * For Dual flash
- * 2014-01-14, jinw.kim@lge.com
- */
 	pr_info("%s: %d: name = %s, val = %d\n",
 		__func__, __LINE__, led->cdev.name, val);
 #endif
@@ -1375,10 +1366,6 @@ error_flash_set:
 }
 
 #if defined(CONFIG_LGE_DUAL_LED)
-/* LGE_CHANGE
- * For Dual flash
- * 2014-01-14, jinw.kim@lge.com
- */
 static int qpnp_flash_set2(struct qpnp_led_data *led)
 {
 	int rc, error;
@@ -1985,10 +1972,6 @@ static int qpnp_rgb_set(struct qpnp_led_data *led)
 }
 
 #if defined(CONFIG_LGE_DUAL_LED)
-/* LGE_CHANGE
- * For Dual flash
- * 2014-01-14, jinw.kim@lge.com
- */
 static void qpnp_led_set2(struct led_classdev *led_cdev,
 				enum led_brightness value, enum led_brightness value2)
 {
@@ -2054,10 +2037,6 @@ static void __qpnp_led_work(struct qpnp_led_data *led,
 	case QPNP_ID_FLASH1_LED0:
 	case QPNP_ID_FLASH1_LED1:
 #if defined(CONFIG_LGE_DUAL_LED)
-/* LGE_CHANGE
- * For Dual flash
- * 2014-01-14, jinw.kim@lge.com
- */
 		if (led->flash_cfg->torch_enable)
 			rc = qpnp_flash_set2(led);
 		else
@@ -3080,10 +3059,6 @@ static int __devinit qpnp_flash_init(struct qpnp_led_data *led)
 	}
 
 #if defined(CONFIG_MACH_LGE)
-/* LGE_CHANGE
- * Change FLASH_VPH_PWR_DROOP
- * 2014-02-04, jinw.kim@lge.com
- */
 	/* Enable VPH_PWR_DROOP and set threshold to 2.9V (0xC2) */
 	rc = qpnp_led_masked_write(led, FLASH_VPH_PWR_DROOP(led->base),
 					FLASH_VPH_PWR_DROOP_MASK, 0xC2);
@@ -4289,10 +4264,6 @@ static int __devinit qpnp_leds_probe(struct spmi_device *spmi)
 
 		led->cdev.brightness_set    = qpnp_led_set;
 #if defined(CONFIG_LGE_DUAL_LED)
-/* LGE_CHANGE
- * For Dual flash
- * 2014-01-14, jinw.kim@lge.com
- */
 		led->cdev.brightness_set2    = qpnp_led_set2;
 #endif
 		led->cdev.brightness_get    = qpnp_led_get;

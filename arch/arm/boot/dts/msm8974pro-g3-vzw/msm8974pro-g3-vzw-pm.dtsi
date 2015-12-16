@@ -160,7 +160,6 @@
 	};
 };
 
-/* LGE_CHANGE, yeri.lee@lge.com, 2013-10-31, wm5110 Bring up */
 /* GPIO 15, 18 */
 &pm8941_gpios {
 	gpio@c600 { /* GPIO 7 */

@@ -67,7 +67,7 @@
 		qcom,master-en = <1>;
 	};
 
-	gpio@cc00 { /* GPIO 13 */ /* LGE_CHANGE, SlimPort Cable Det IRQ */
+	gpio@cc00 { /* GPIO 13 */
 		status = "ok";
 		qcom,mode = <0>;		/* QPNP_PIN_MODE_DIG_IN */
 		qcom,pull = <4>;		/* QPNP_PIN_PULL_DN */
@@ -76,7 +76,7 @@
 		qcom,master-en = <1>;
 	};
 
-	gpio@cd00 { /* GPIO 14 */ /* LGE_CHANGE, SlimPort PWR Ctl Pin Setting */
+	gpio@cd00 { /* GPIO 14 */
 		status = "ok";
 		qcom,mode = <1>;		/* QPNP_PIN_MODE_DIG_OUT */
 		qcom,output-type = <0>;		/* QPNP_PIN_OUT_BUF_CMOS */

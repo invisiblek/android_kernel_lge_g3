@@ -877,37 +877,38 @@ socinfo_show_avs_gfx(struct sys_device *dev,
 
 static int socinfo_get_speed_bin(void)
 {
-    u32 pte_efuse, redundant_sel;
+	u32 pte_efuse, redundant_sel;
 	int speed_bin;
 	void __iomem *tmp;
 
-    tmp = ioremap(QFPROM_PTE_EFUSE_ADDR, 0x4);
+	tmp = ioremap(QFPROM_PTE_EFUSE_ADDR, 0x4);
 	pte_efuse = (u32)readl(tmp);
-    redundant_sel = (pte_efuse >> 24) & 0x7;
-    speed_bin = pte_efuse & 0x7;
-    if (redundant_sel == 1)
-        speed_bin = (pte_efuse >> 27) & 0xF;
+	redundant_sel = (pte_efuse >> 24) & 0x7;
+	speed_bin = pte_efuse & 0x7;
+	if (redundant_sel == 1)
+		speed_bin = (pte_efuse >> 27) & 0xF;
 
 	return speed_bin;
 }
 
 static int socinfo_get_pvs(void)
 {
-    u32 pte_efuse, redundant_sel;
+	u32 pte_efuse, redundant_sel;
 	int pvs;
 	void __iomem *tmp;
 
-    tmp = ioremap(QFPROM_PTE_EFUSE_ADDR, 0x4);
+	tmp = ioremap(QFPROM_PTE_EFUSE_ADDR, 0x4);
 	pte_efuse = (u32)readl(tmp);
-    redundant_sel = (pte_efuse >> 4) & 0x3;
-    pvs = ((pte_efuse >> 28) & 0x8) | ((pte_efuse >> 6) & 0x7);
+	redundant_sel = (pte_efuse >> 4) & 0x3;
+	pvs = ((pte_efuse >> 28) & 0x8) | ((pte_efuse >> 6) & 0x7);
 
-    if (redundant_sel == 2)
-        pvs = (pte_efuse >> 27) & 0xF;
+	if (redundant_sel == 2)
+		pvs = (pte_efuse >> 27) & 0xF;
 
 	pte_efuse = (u32)readl(tmp + 0x4);
-    if (!!(pte_efuse & BIT(21)))
+	if (!!(pte_efuse & BIT(21)))
 		return pvs;
+
 	return -1;
 }
 
@@ -954,31 +955,31 @@ socinfo_show_soc_name(struct sys_device *dev,
 					  struct sysdev_attribute *attr,
 					  char *buf)
 {
-    char *soc_name;
-    if (!socinfo) {
-        pr_err("%s: No socinfo found!\n", __func__);
-        return 0;
-    }
+	char *soc_name;
+	if (!socinfo) {
+		pr_err("%s: No socinfo found!\n", __func__);
+		return 0;
+	}
 
-    switch(cpu_of_id[socinfo_get_id()].generic_soc_type) {
-    case MSM_CPU_8974:
-        soc_name = "MSM_CPU_8974";
-        break;
-    case MSM_CPU_8974PRO_AA:
-        soc_name = "MSM_CPU_8974PRO_AA";
-        break;
-    case MSM_CPU_8974PRO_AB:
-        soc_name = "MSM_CPU_8974PRO_AB";
-        break;
-    case MSM_CPU_8974PRO_AC:
-        soc_name = "MSM_CPU_8974PRO_AC";
-        break;
-    default:
-        soc_name = "NOT_8974";
-        break;
-    }
+	switch(cpu_of_id[socinfo_get_id()].generic_soc_type) {
+	case MSM_CPU_8974:
+		soc_name = "MSM_CPU_8974";
+		break;
+	case MSM_CPU_8974PRO_AA:
+		soc_name = "MSM_CPU_8974PRO_AA";
+		break;
+	case MSM_CPU_8974PRO_AB:
+		soc_name = "MSM_CPU_8974PRO_AB";
+		break;
+	case MSM_CPU_8974PRO_AC:
+		soc_name = "MSM_CPU_8974PRO_AC";
+		break;
+	default:
+		soc_name = "NOT_8974";
+		break;
+	}
 
-    return snprintf(buf, PAGE_SIZE, "%s\n", soc_name);
+	return snprintf(buf, PAGE_SIZE, "%s\n", soc_name);
 }
 #endif
 

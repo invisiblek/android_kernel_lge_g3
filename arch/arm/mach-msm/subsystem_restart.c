@@ -803,6 +803,7 @@ int subsystem_restart(const char *name)
 }
 EXPORT_SYMBOL(subsystem_restart);
 
+#ifdef CONFIG_MACH_LGE
 int subsys_modem_restart(void)
 {
 	int ret;
@@ -828,6 +829,7 @@ int subsys_modem_restart(void)
 	return ret;
 }
 EXPORT_SYMBOL(subsys_modem_restart);
+#endif
 
 int subsystem_crashed(const char *name)
 {

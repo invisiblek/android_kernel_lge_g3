@@ -1215,7 +1215,6 @@ static int __init smd_tty_init(void)
 				msecs_to_jiffies(SMD_TTY_PROBE_WAIT_TIMEOUT));
 
 	wakeup_source_init(&read_in_suspend_ws, "SMDTTY_READ_IN_SUSPEND");
-
 	return 0;
 }
 

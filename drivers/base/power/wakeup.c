@@ -17,11 +17,6 @@
 #include <trace/events/power.h>
 
 #include "power.h"
-/* #define POLL_DEBUG */
-#ifdef POLL_DEBUG
-#define POLL_PERIOD	(5 * HZ)
-struct delayed_work poll_work;
-#endif
 /*
  * If set, the suspend/hibernate code will abort transitions to a sleep state
  * if wakeup events are registered during or immediately before the transition.
@@ -381,19 +376,6 @@ EXPORT_SYMBOL_GPL(device_set_wakeup_enable);
 static void wakeup_source_activate(struct wakeup_source *ws)
 {
 	unsigned int cec;
-#if defined(CONFIG_MACH_MSM8974_B1_KR) || defined(CONFIG_MACH_MSM8974_B1W)
-	extern int boost_freq;
-	extern bool suspend_marker_entry;
-	unsigned int cnt, inpr;
-	bool wakeup_pending = true;
-
-	if (suspend_marker_entry) {
-		split_counters(&cnt, &inpr);
-		if (cnt == saved_count && inpr == 0) {
-			wakeup_pending = false;
-		}
-	}
-#endif
 	ws->active = true;
 	ws->active_count++;
 	ws->last_time = ktime_get();
@@ -402,20 +384,8 @@ static void wakeup_source_activate(struct wakeup_source *ws)
 
 	/* Increment the counter of events in progress. */
 	cec = atomic_inc_return(&combined_event_count);
+
 	trace_wakeup_source_activate(ws->name, cec);
-#if defined(CONFIG_MACH_MSM8974_B1_KR) || defined(CONFIG_MACH_MSM8974_B1W)
-	if (suspend_marker_entry) {
-		if (!wakeup_pending) {
-			if (boost_freq == 1) {
-				if (!strcmp(ws->name, "touch_irq") || !strcmp(ws->name, "hall_ic_wakeups")){
-					printk(KERN_ERR "ws->name=%s, boost_Freq=%d\n", ws->name, boost_freq);
-					boost_freq++;
-					printk(KERN_ERR "ws->name=%s, boost_Freq=%d\n", ws->name, boost_freq);
-				}
-			}
-		}
-	}
-#endif
 }
 
 /**
@@ -1030,25 +1000,6 @@ static const struct file_operations wakeup_sources_active_stats_fops = {
 	.llseek = seq_lseek,
 	.release = single_release,
 };
-
-#ifdef POLL_DEBUG
-static void poll_worker(struct work_struct *work)
-{
-	struct wakeup_source *ws;
-	printk("name\t\tactive_count\tevent_count\twakeup_count\t"
-		"expire_count\tpending_count\tactive_since\ttotal_time\t"
-		"max_time\tlast_change\tprevent_suspend_time\n");
-	rcu_read_lock();
-	list_for_each_entry_rcu(ws, &wakeup_sources, entry) {
-		char buf[BUF_MAX];
-		__print_wakeup_source_active_stats(ws, buf);
-		printk("%s", buf);
-	}
-	rcu_read_unlock();
-
-	schedule_delayed_work(&poll_work, POLL_PERIOD);
-}
-#endif
 #endif
 
 static int __init wakeup_sources_debugfs_init(void)
@@ -1059,10 +1010,6 @@ static int __init wakeup_sources_debugfs_init(void)
 #ifdef CONFIG_LGE_PM
 	wakeup_sources_stats_dentry = debugfs_create_file("wakeup_sources_active",
 			S_IRUGO, NULL, NULL, &wakeup_sources_active_stats_fops);
-#ifdef POLL_DEBUG
-	INIT_DELAYED_WORK(&poll_work, poll_worker);
-	schedule_delayed_work(&poll_work, POLL_PERIOD);
-#endif
 #endif
 
 	return 0;

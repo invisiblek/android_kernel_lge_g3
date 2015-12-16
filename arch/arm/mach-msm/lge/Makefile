@@ -1,4 +1,3 @@
-
 # LGE Board Selection
 obj-$(CONFIG_MACH_MSM8974_G3) += 8974ac-g3/
 

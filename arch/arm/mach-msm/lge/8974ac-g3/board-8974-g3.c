@@ -94,10 +94,6 @@ static void __init msm8974_early_memory(void)
  * into this category, and thus the driver should not be added here. The
  * EPROBE_DEFER can satisfy most dependency problems.
  */
-#ifdef CONFIG_BCMDHD
-extern void init_bcm_wifi(void);
-#endif
-
 void __init msm8974_add_drivers(void)
 {
 	msm_smem_init();
@@ -117,9 +113,6 @@ void __init msm8974_add_drivers(void)
 	lge_add_persistent_device();
 #ifdef CONFIG_LGE_QFPROM_INTERFACE
 	lge_add_qfprom_devices();
-#endif
-#ifdef CONFIG_BCMDHD
-	init_bcm_wifi();
 #endif
 #ifdef CONFIG_USB_G_LGE_ANDROID
 	lge_add_android_usb_devices();

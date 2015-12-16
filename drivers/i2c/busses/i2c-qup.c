@@ -143,13 +143,8 @@ enum msm_i2c_state {
 #define QUP_OUT_FIFO_NOT_EMPTY		0x10
 #define I2C_GPIOS_DT_CNT		(2)		/* sda and scl */
 
-#if defined(CONFIG_CHARGER_MAX77819) || defined(CONFIG_BQ24192_CHARGER) || \
-    defined(CONFIG_INPUT_MAX14688) || defined(CONFIG_SMB349_CHARGER) || \
-    defined(CONFIG_BQ51053B_CHARGER)
+#ifdef CONFIG_CHARGER_MAX77819
 bool i2c_suspended;
-#endif
-#if defined(CONFIG_TOUCHSCREEN_ATMEL_S540) || defined(CONFIG_TOUCHSCREEN_SYNAPTICS_3404S)
-bool atmel_touch_i2c_suspended = false;		/* Use atme touch IC for checking i2c suspend */
 #endif
 static char const * const i2c_rsrcs[] = {"i2c_clk", "i2c_sda"};
 
@@ -1807,20 +1802,10 @@ static int i2c_qup_pm_suspend_sys(struct device *device)
 	/* Acquire mutex to ensure current transaction is over */
 	mutex_lock(&dev->mlock);
 
-#if defined(CONFIG_CHARGER_MAX77819) || defined(CONFIG_BQ24192_CHARGER) || \
-    defined(CONFIG_INPUT_MAX14688) || defined(CONFIG_SMB349_CHARGER) || \
-    defined(CONFIG_BQ51053B_CHARGER)
+#ifdef CONFIG_CHARGER_MAX77819
 	i2c_suspended = true;
-#endif
-#if defined(CONFIG_TOUCHSCREEN_ATMEL_S540)
-	if (!strncmp(dev_name(device), "f9924000.i2c", 12)){
-		atmel_touch_i2c_suspended = true;
-		dev_dbg(device, "lge_touch I2C Suspend!\n");
-	}
-#endif
-	#if !defined(CONFIG_CHARGER_MAX77819)
 	dev->pwr_state = MSM_I2C_SYS_SUSPENDING;
-	#endif
+#endif
 	mutex_unlock(&dev->mlock);
 	if (!pm_runtime_enabled(device) || !pm_runtime_suspended(device)) {
 		dev_dbg(device, "system suspend\n");
@@ -1832,9 +1817,9 @@ static int i2c_qup_pm_suspend_sys(struct device *device)
 		pm_runtime_set_suspended(device);
 		pm_runtime_enable(device);
 	}
-	#if !defined(CONFIG_CHARGER_MAX77819)
+#ifndef CONFIG_CHARGER_MAX77819
 	dev->pwr_state = MSM_I2C_SYS_SUSPENDED;
-	#endif
+#endif
 	return 0;
 }
 
@@ -1872,16 +1857,8 @@ static int i2c_qup_pm_resume_sys(struct device *device)
 		dev_info(device, "i2c can't wake up !!! pm_runtime_get_sync() doesn't work !!!\n");
 	}
 #endif /* CONFIG_MACH_LGE */
-#if defined(CONFIG_CHARGER_MAX77819) || defined(CONFIG_BQ24192_CHARGER) || \
-    defined(CONFIG_INPUT_MAX14688) || defined(CONFIG_SMB349_CHARGER) || \
-    defined(CONFIG_BQ51053B_CHARGER)
+#ifdef CONFIG_CHARGER_MAX77819
 	i2c_suspended = false;
-#endif
-#if defined(CONFIG_TOUCHSCREEN_ATMEL_S540)
-	if (!strncmp(dev_name(device), "f9924000.i2c", 12)){
-		atmel_touch_i2c_suspended = false;
-		dev_dbg(device, "lge_touch I2C Resume!\n");
-	}
 #endif
 	return 0;
 }

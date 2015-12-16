@@ -940,7 +940,7 @@ static void dwc3_otg_sm_work(struct work_struct *w)
 				/* Has charger been detected? If no detect it */
 				switch (charger->chg_type) {
 				case DWC3_PROPRIETARY_CHARGER:
-#if defined(CONFIG_LGE_PM)
+#ifdef CONFIG_LGE_PM
 					dwc3_otg_set_power(phy,
 							DWC3_IDEV_CHG_PROPRIETARY_MAX);
 					pm_runtime_put_sync(phy->dev);

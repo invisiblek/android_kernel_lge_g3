@@ -4280,7 +4280,7 @@ qpnp_eoc_work(struct work_struct *work)
 					chip->vbatdet_max_err_mv,
 					vbat_low_count);
 			if (vbat_low_count >= CONSECUTIVE_COUNT) {
-#if defined(CONFIG_LGE_PM)
+#ifdef CONFIG_LGE_PM
 				pr_debug("woke up too early stopping\n");
 				goto check_again_later;
 #else
@@ -4307,7 +4307,7 @@ qpnp_eoc_work(struct work_struct *work)
 		} else if (ibat_ma > 0) {
 			pr_debug("Charging but system demand increased\n");
 			count = 0;
-#if defined(CONFIG_LGE_PM)
+#ifdef CONFIG_LGE_PM
 		} else if (soc < 100) {
 			pr_debug("Soc is not 100.\n");
 			count = 0;
@@ -4331,7 +4331,7 @@ qpnp_eoc_work(struct work_struct *work)
 				pr_debug("psy changed batt_psy\n");
 				power_supply_changed(&chip->batt_psy);
 				qpnp_chg_enable_irq(&chip->chg_vbatdet_lo);
-#if defined(CONFIG_LGE_PM)
+#ifdef CONFIG_LGE_PM
 				chip->vbatdet_lo_cnt = 0;
 				vbat_low_count = 0;
 				count = 0;

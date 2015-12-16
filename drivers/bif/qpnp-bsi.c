@@ -26,7 +26,7 @@
 #include <linux/workqueue.h>
 #include <linux/bif/driver.h>
 #include <linux/qpnp/qpnp-adc.h>
-#if defined(CONFIG_LGE_PM)
+#ifdef CONFIG_LGE_PM
 #include <mach/msm_smem.h>
 #include <mach/board_lge.h>
 #include <linux/power_supply.h>
@@ -64,7 +64,7 @@ struct qpnp_bsi_chip {
 	int			batt_present_irq;
 	enum qpnp_vadc_channels	batt_id_adc_channel;
 	struct qpnp_vadc_chip	*vadc_dev;
-#if defined(CONFIG_LGE_PM)
+#ifdef CONFIG_LGE_PM
 	bool			battery_present;
 	struct task_struct	*battery_removal_task;
 #endif
@@ -1401,7 +1401,7 @@ static int qpnp_bsi_get_battery_rid(struct bif_ctrl_dev *bdev)
 	return rid_ohm;
 }
 
-#if defined(CONFIG_LGE_PM)
+#ifdef CONFIG_LGE_PM
 static inline void battery_removal_notify(int present)
 {
 	union power_supply_propval val;
@@ -1475,7 +1475,7 @@ static int qpnp_bsi_get_battery_presence(struct bif_ctrl_dev *bdev)
 			__func__, rc);
 		return rc;
 	}
-#if defined(CONFIG_LGE_PM)
+#ifdef CONFIG_LGE_PM
 	chip->battery_present = !!(reg & QPNP_SMBB_BAT_IF_BATT_PRES_MASK);
 	if (chip->battery_present) {
 		if (chip->battery_removal_task) {

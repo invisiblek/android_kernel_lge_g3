@@ -49,16 +49,9 @@ static unsigned wlan_wakes_msm[] = {
 
 #define LGE_BCM_WIFI_DMA_QOS_CONTROL
 
-#if defined(CONFIG_BCM4335BT) 
-extern int bcm_bt_lock(int cookie);
-extern void bcm_bt_unlock(int cookie);
-static int lock_cookie_wifi = 'W' | 'i'<<8 | 'F'<<16 | 'i'<<24; /* cookie is "WiFi" */
-#endif // defined(CONFIG_BCM4335BT) 
-
-/*
-	Memory allocation is done at dhd_attach
-	so static allocation is only necessary in module type driver
-*/
+/* Memory allocation is done at dhd_attach
+ * so static allocation is only necessary in module type driver
+ */
 #ifdef CONFIG_BROADCOM_WIFI_RESERVED_MEM
 
 #define PREALLOC_WLAN_NUMBER_OF_SECTIONS	12
@@ -69,20 +62,20 @@ static int lock_cookie_wifi = 'W' | 'i'<<8 | 'F'<<16 | 'i'<<24; /* cookie is "Wi
 This definition is from driver's dhd.h
 
 enum dhd_prealloc_index {
-	DHD_PREALLOC_PROT = 0, 
-	DHD_PREALLOC_RXBUF, 
-	DHD_PREALLOC_DATABUF, 
-	DHD_PREALLOC_OSL_BUF, 
-#if defined(STATIC_WL_PRIV_STRUCT) 
-	DHD_PREALLOC_WIPHY_ESCAN0 = 5, 
-#if defined(CUSTOMER_HW4) && defined(DUAL_ESCAN_RESULT_BUFFER) 
-	DHD_PREALLOC_WIPHY_ESCAN1, 
-#endif 
+	DHD_PREALLOC_PROT = 0,
+	DHD_PREALLOC_RXBUF,
+	DHD_PREALLOC_DATABUF,
+	DHD_PREALLOC_OSL_BUF,
+#if defined(STATIC_WL_PRIV_STRUCT)
+	DHD_PREALLOC_WIPHY_ESCAN0 = 5,
+#if defined(CUSTOMER_HW4) && defined(DUAL_ESCAN_RESULT_BUFFER)
+	DHD_PREALLOC_WIPHY_ESCAN1,
 #endif
-	DHD_PREALLOC_DHD_INFO = 7 
+#endif
+	DHD_PREALLOC_DHD_INFO = 7
 	DHD_PREALLOC_DHD_WLFC_INFO = 8,
 	DHD_PREALLOC_IF_FLOW_LKUP = 9,
-	DHD_PREALLOC_FLOWRING = 10	
+	DHD_PREALLOC_FLOWRING = 10
 };
 */
 
@@ -135,7 +128,7 @@ static struct wlan_mem_prealloc wlan_mem_array[PREALLOC_WLAN_NUMBER_OF_SECTIONS]
 	{ NULL, (WLAN_SECTION_SIZE_1) },
 	{ NULL, (WLAN_SECTION_SIZE_2) },
 	{ NULL, (WLAN_SECTION_SIZE_3) },
-	{ NULL, (WLAN_SECTION_SIZE_4) },       
+	{ NULL, (WLAN_SECTION_SIZE_4) },
 	{ NULL, (WLAN_SECTION_SIZE_5) },
 	{ NULL, (WLAN_SECTION_SIZE_6) },
 	{ NULL, (WLAN_SECTION_SIZE_7) },
@@ -293,14 +286,6 @@ int bcm_wifi_set_power(int enable)
 		is_initialized = 1;
 	}
 
-#if defined(CONFIG_BCM4335BT)
-	printk("%s: trying to acquire BT lock\n", __func__);
-	if (bcm_bt_lock(lock_cookie_wifi) != 0)
-		printk("%s:** WiFi: timeout in acquiring bt lock**\n", __func__);
-	else
-		printk("%s: btlock acquired\n", __func__);
-#endif
-
 	if (enable) {
 		ret = gpio_direction_output(gpio_wlan_power, 1);
 		if (ret) {
@@ -314,30 +299,17 @@ int bcm_wifi_set_power(int enable)
 		mdelay(150);
 		printk(KERN_ERR "%s: wifi power successed to pull up\n",__func__);
 	} else {
-		ret = gpio_direction_output(gpio_wlan_power, 0); 
+		ret = gpio_direction_output(gpio_wlan_power, 0);
 		if (ret) {
 			printk(KERN_ERR "%s:  WL_REG_ON  failed to pull down (%d)\n",
 					__func__, ret);
 			ret = -EIO;
 			goto out;
 		}
-		// WLAN chip down 
+		// WLAN chip down
 		printk(KERN_ERR "%s: wifi power successed to pull down\n",__func__);
 	}
-
-#if defined(CONFIG_BCM4335BT) 
-	bcm_bt_unlock(lock_cookie_wifi);
-#endif // defined(CONFIG_BCM4335BT) 
-
-	return ret;
-
-out : 
-#if defined(CONFIG_BCM4335BT) 
-	/* For a exceptional case, release btlock */
-	printk("%s: exceptional bt_unlock\n", __func__);
-	bcm_bt_unlock(lock_cookie_wifi);
-#endif // defined(CONFIG_BCM4335BT) 
-
+out :
 	return ret;
 }
 
@@ -868,7 +840,7 @@ static void *bcm_wifi_get_country_code(char *ccode)
 		if (strcmp(ccode, bcm_wifi_translate_custom_table[i].iso_abbrev) == 0) {
 			return (void *)&bcm_wifi_translate_custom_table[i];
 		}
-	}   
+	}
 
 	memset(&country_code, 0, sizeof(struct cntry_locales_custom));
 	strlcpy(country_code.custom_locale, ccode, COUNTRY_BUF_SZ);
@@ -883,7 +855,7 @@ static struct wifi_platform_data bcm_wifi_control = {
 	.set_power		= bcm_wifi_set_power,
 	.set_reset      = bcm_wifi_reset,
 	.set_carddetect = bcm_wifi_carddetect,
-	.get_mac_addr   = bcm_wifi_get_mac_addr, 
+	.get_mac_addr   = bcm_wifi_get_mac_addr,
 	.get_country_code = bcm_wifi_get_country_code,
 };
 
@@ -949,7 +921,7 @@ int bcm_wifi_init_gpio(struct platform_device *platdev)
 		printk(KERN_ERR "%s: Failed to configure WiFi Reset GPIO:[%d]\n", __func__, ret);
 	}
 	//HOST_WAKEUP
-	ret = gpio_tlmm_config(wlan_wakes_msm[0], GPIO_CFG_ENABLE);	
+	ret = gpio_tlmm_config(wlan_wakes_msm[0], GPIO_CFG_ENABLE);
 	if (ret) {
 		printk(KERN_ERR "%s: Failed to configure Hostwakeup:[%d]\n",__func__, ret);
 	}
@@ -1034,4 +1006,3 @@ static int __init init_bcm_wifi(void)
 }
 
 subsys_initcall(init_bcm_wifi);
-

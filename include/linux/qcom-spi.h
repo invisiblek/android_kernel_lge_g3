@@ -53,7 +53,4 @@ struct msm_spi_platform_data {
 	bool rt_priority;
 	bool use_pinctrl;
 	bool is_shared;
-#ifdef CONFIG_MACH_LGE
-	bool do_not_create_sysfs_file;
-#endif
 };

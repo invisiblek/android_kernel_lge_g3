@@ -1,5 +1,6 @@
 config MACH_MSM8974_G3
 	bool
+	select LGE_PM_BATTERY_ID_CHECKER
 	select SND_SOC_CS35L32
 	select SND_SOC_TPA2015D
 

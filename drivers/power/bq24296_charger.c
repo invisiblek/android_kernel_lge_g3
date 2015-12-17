@@ -48,6 +48,9 @@
 #include <mach/lge_charging_scenario.h>
 #define MONITOR_BATTEMP_POLLING_PERIOD          (60*HZ)
 #endif
+#ifdef CONFIG_LGE_PM_BATTERY_ID_CHECKER
+#include <linux/power/lge_battery_id.h>
+#endif
 
 #ifdef CONFIG_ZERO_WAIT
 #include <linux/zwait.h>
@@ -300,6 +303,9 @@ struct bq24296_chip {
 	struct wake_lock battgone_wake_lock;
 	struct wake_lock chg_timeout_lock;
 	struct qpnp_vadc_chip *vadc_dev;
+#ifdef CONFIG_LGE_PM_BATTERY_ID_CHECKER
+	int batt_id_smem;
+#endif
 	bool watchdog;
 #ifdef I2C_SUSPEND_WORKAROUND
 	struct delayed_work check_suspended_work;
@@ -1471,6 +1477,9 @@ static enum power_supply_property bq24296_batt_power_props[] = {
 	POWER_SUPPLY_PROP_PSEUDO_BATT,
 	POWER_SUPPLY_PROP_EXT_PWR_CHECK,
 	POWER_SUPPLY_PROP_SAFTETY_CHARGER_TIMER,
+#ifdef CONFIG_LGE_PM_BATTERY_ID_CHECKER
+	POWER_SUPPLY_PROP_BATTERY_ID_CHECKER,
+#endif
 #if defined(CONFIG_VZW_POWER_REQ)
 	POWER_SUPPLY_PROP_VZW_CHG,
 #endif
@@ -1857,6 +1866,14 @@ static int bq24296_batt_power_get_property(struct power_supply *psy,
 		pr_info("get charger_timeout : %d[D]\n", val->intval);
 	}
 		break;
+#ifdef CONFIG_LGE_PM_BATTERY_ID_CHECKER
+	case POWER_SUPPLY_PROP_BATTERY_ID_CHECKER:
+		if (is_factory_cable() && bq24296_is_charger_present(chip))
+			val->intval = 1;
+		else
+			val->intval = chip->batt_id_smem;
+		break;
+#endif
 #if defined(CONFIG_VZW_POWER_REQ)
 	case POWER_SUPPLY_PROP_VZW_CHG:
 		val->intval = bq24296_is_charger_present(chip) ?
@@ -3216,6 +3233,12 @@ static int bq24296_probe(struct i2c_client *client,
 	struct device_node *dev_node = client->dev.of_node;
 	struct bq24296_chip *chip;
 	int ret = 0;
+#ifdef CONFIG_LGE_PM_BATTERY_ID_CHECKER
+	uint *smem_batt = 0;
+#ifdef CONFIG_LGE_LOW_BATT_LIMIT
+	uint _smem_batt_ = 0;
+#endif
+#endif
 	unsigned int *p_cable_type = (unsigned int *)
 		(smem_get_entry(SMEM_ID_VENDOR1, &cable_smem_size));
 
@@ -3410,6 +3433,25 @@ static int bq24296_probe(struct i2c_client *client,
 		pr_err("bq24296_init_ac_psy failed ret=%d\n", ret);
 		goto err_init_ac_psy;
 	}
+#ifdef CONFIG_LGE_PM_BATTERY_ID_CHECKER
+	smem_batt = (uint *)smem_alloc(SMEM_BATT_INFO, sizeof(smem_batt));
+	if (smem_batt == NULL) {
+		pr_err("%s : smem_alloc returns NULL\n", __func__);
+		chip->batt_id_smem = 0;
+	} else {
+#ifdef CONFIG_LGE_LOW_BATT_LIMIT
+		_smem_batt_ = (*smem_batt >> 8) & 0x00ff; /* batt id -> HSB */
+		pr_info("Battery was read in sbl is = %d\n", _smem_batt_);
+		if (_smem_batt_ == BATT_ID_DS2704_L ||
+			_smem_batt_ == BATT_ID_DS2704_C ||
+			_smem_batt_ == BATT_ID_ISL6296_L ||
+			_smem_batt_ == BATT_ID_ISL6296_C)
+#endif
+			chip->batt_id_smem = 1;
+		else
+			chip->batt_id_smem = 0;
+	}
+#endif
 
 	if (!chip->watchdog) {
 		ret = bq24296_masked_write(chip->client, BQ05_CHARGE_TERM_TIMER_CONT_REG,

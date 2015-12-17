@@ -53,6 +53,9 @@
 #include <linux/pm_wakeup.h>
 #include <mach/board_lge.h>
 #include <mach/msm_smsm.h>
+#ifdef CONFIG_LGE_PM_BATTERY_ID_CHECKER
+#include <linux/power/lge_battery_id.h>
+#endif
 
 #define CHG_STEP	50000
 #endif
@@ -228,6 +231,9 @@ struct max77819_charger {
 	int					te;
 	int					otg_en_gpio;
 	int					battery_present;
+#endif
+#ifdef CONFIG_LGE_PM_BATTERY_ID_CHECKER
+	int					batt_id_smem;
 #endif
 
 #if I2C_SUSPEND_WORKAROUND
@@ -2477,6 +2483,14 @@ max77819_charger_batt_get_property(struct power_supply *psy,
 	case POWER_SUPPLY_PROP_EXT_PWR_CHECK:
 		val->intval = 1;
 		break;
+#ifdef CONFIG_LGE_PM_BATTERY_ID_CHECKER
+	case POWER_SUPPLY_PROP_BATTERY_ID_CHECKER:
+		if (is_factory_cable())
+			val->intval = 1;
+		else
+			val->intval = me->batt_id_smem;
+		break;
+#endif
 	default:
 		rc = -EINVAL;
 		goto out;
@@ -2600,6 +2614,9 @@ static enum power_supply_property max77819_charger_batt_props[] = {
 	POWER_SUPPLY_PROP_SYSTEM_TEMP_LEVEL,
 	POWER_SUPPLY_PROP_PSEUDO_BATT,
 	POWER_SUPPLY_PROP_EXT_PWR_CHECK,
+#ifdef CONFIG_LGE_PM_BATTERY_ID_CHECKER
+	POWER_SUPPLY_PROP_BATTERY_ID_CHECKER,
+#endif
 };
 static int max77819_charger_ac_get_event_property(struct power_supply *psy,
 					enum power_supply_event_type psp,
@@ -3228,6 +3245,12 @@ static __devinit int max77819_charger_probe(struct platform_device *pdev)
 	struct max77819_dev *chip = dev_get_drvdata(dev->parent);
 	struct max77819_charger *me;
 	int rc = 0;
+#ifdef CONFIG_LGE_PM_BATTERY_ID_CHECKER
+	uint *smem_batt = 0;
+#ifdef CONFIG_LGE_LOW_BATT_LIMIT
+	uint _smem_batt_ = 0;
+#endif
+#endif
 
 	log_dbg("attached\n");
 
@@ -3246,6 +3269,25 @@ static __devinit int max77819_charger_probe(struct platform_device *pdev)
 	me->kobj = &dev->kobj;
 	me->irq  = -1;
 
+#ifdef CONFIG_LGE_PM_BATTERY_ID_CHECKER
+	smem_batt = (uint *)smem_alloc(SMEM_BATT_INFO, sizeof(smem_batt));
+	if (smem_batt == NULL) {
+		pr_err("%s : smem_alloc returns NULL\n",__func__);
+		me->batt_id_smem = 0;
+	} else {
+		pr_info("Battery was read in sbl is = %d\n", *smem_batt);
+#ifdef CONFIG_LGE_LOW_BATT_LIMIT
+		_smem_batt_ = (*smem_batt >>8) & 0x00ff; /* batt id -> HSB */
+		if (_smem_batt_ == BATT_ID_DS2704_L ||
+			_smem_batt_ == BATT_ID_DS2704_C ||
+			_smem_batt_ == BATT_ID_ISL6296_L ||
+			_smem_batt_ == BATT_ID_ISL6296_C)
+#endif
+			me->batt_id_smem = 1;
+		else
+			me->batt_id_smem = 0;
+	}
+#endif
 #ifdef CONFIG_LGE_PM
 	wake_lock_init(&me->chg_wake_lock, WAKE_LOCK_SUSPEND, "chg_wakelock");
 	wake_lock_init(&me->plug_lock, WAKE_LOCK_SUSPEND, "plug_wakelock");

@@ -114,6 +114,9 @@ void __init msm8974_add_drivers(void)
 #ifdef CONFIG_LGE_QFPROM_INTERFACE
 	lge_add_qfprom_devices();
 #endif
+#ifdef CONFIG_LGE_PM_BATTERY_ID_CHECKER
+        lge_battery_id_devices();
+#endif
 #ifdef CONFIG_USB_G_LGE_ANDROID
 	lge_add_android_usb_devices();
 #endif

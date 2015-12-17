@@ -128,6 +128,9 @@ struct max17048_chip {
 static struct max17048_chip *ref;
 int lge_power_test_flag = 1;
 #endif
+#ifdef CONFIG_LGE_PM_BATTERY_ID_CHECKER
+int cell_info;
+#endif
 
 static int max17048_write_word(struct i2c_client *client, int reg, u16 value)
 {
@@ -1008,6 +1011,27 @@ static int max17048_parse_dt(struct device *dev,
 	rc = of_property_read_u32(dev_node, "max17048,full_design",
 			&mdata->full_design);
 
+#ifdef CONFIG_LGE_PM_BATTERY_ID_CHECKER
+	if (cell_info == LGC_LLL) {
+		rc = of_property_read_u32(dev_node, "max17048,rcomp_lgc",
+				&mdata->rcomp);
+		rc = of_property_read_u32(dev_node, "max17048,temp_co_hot_lgc",
+				&mdata->temp_co_hot);
+		rc = of_property_read_u32(dev_node, "max17048,temp_co_cold_lgc",
+				&mdata->temp_co_cold);
+		rc = of_property_read_u32(dev_node, "max17048,empty_lgc",
+				&mdata->empty);
+	} else if (cell_info == TCD_AAC) {
+		rc = of_property_read_u32(dev_node, "max17048,rcomp_tcd",
+				&mdata->rcomp);
+		rc = of_property_read_u32(dev_node, "max17048,temp_co_hot_tcd",
+				&mdata->temp_co_hot);
+		rc = of_property_read_u32(dev_node, "max17048,temp_co_cold_tcd",
+				&mdata->temp_co_cold);
+		rc = of_property_read_u32(dev_node, "max17048,empty_tcd",
+				&mdata->empty);
+	}
+#else
 	rc = of_property_read_u32(dev_node, "max17048,rcomp",
 			&mdata->rcomp);
 	rc = of_property_read_u32(dev_node, "max17048,temp_co_hot",
@@ -1016,6 +1040,7 @@ static int max17048_parse_dt(struct device *dev,
 			&mdata->temp_co_cold);
 	rc = of_property_read_u32(dev_node, "max17048,empty",
 			&mdata->empty);
+#endif
 
 	printk(KERN_INFO "[MAX17048] platform data : "\
 		"rcomp = %d, "\
@@ -1047,12 +1072,12 @@ static int __devinit max17048_probe(struct i2c_client *client,
 	uint16_t version;
 #ifdef CONFIG_LGE_PM
 	unsigned int smem_size = 0;
-#if defined(CONFIG_LGE_LOW_BATT_LIMIT)
+#ifdef CONFIG_LGE_LOW_BATT_LIMIT
 	uint	_batt_id_ = 0;
 #endif
 	unsigned int *batt_id = (unsigned int *)
 		(smem_get_entry(SMEM_BATT_INFO, &smem_size));
-#if defined(CONFIG_LGE_LOW_BATT_LIMIT)
+#ifdef CONFIG_LGE_LOW_BATT_LIMIT
 	if (smem_size != 0 && batt_id) {
 		_batt_id_ = (*batt_id >> 8) & 0x00ff;
 		if (_batt_id_ == BATT_NOT_PRESENT) {
@@ -1060,6 +1085,18 @@ static int __devinit max17048_probe(struct i2c_client *client,
 			ref = NULL;
 			return 0;
 		}
+#ifdef CONFIG_LGE_PM_BATTERY_ID_CHECKER
+		else if (_batt_id_ == BATT_DS2704_L
+			|| _batt_id_ == BATT_ISL6296_C) {
+			cell_info = LGC_LLL; /* LGC Battery */
+		} else if (_batt_id_ == BATT_DS2704_C
+			|| _batt_id_ == BATT_ISL6296_L) {
+			cell_info = TCD_AAC; /* Tocad, Hitachi Battery */
+		} else {
+			printk(KERN_INFO "[MAX17048] probe : Unknown cell, Using LGC profile\n");
+			cell_info = LGC_LLL;
+		}
+#endif
 	}
 
 #else

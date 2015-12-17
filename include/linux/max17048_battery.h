@@ -18,6 +18,19 @@
 #define CONFIG_MAX17048_SOC_ALERT
 #define CONFIG_MAX17048_CUSTOM
 
+#ifdef CONFIG_LGE_PM_BATTERY_ID_CHECKER
+enum cell_type{
+	LGC_LLL,
+	TCD_AAC
+};
+
+#define BATT_DS2704_L   32
+#define BATT_DS2704_C   48
+#define BATT_ISL6296_N  73
+#define BATT_ISL6296_L  94
+#define BATT_ISL6296_C  105
+#endif
+
 struct max17048_battery_model {
 	int empty;
 #ifdef CONFIG_LGE_PM

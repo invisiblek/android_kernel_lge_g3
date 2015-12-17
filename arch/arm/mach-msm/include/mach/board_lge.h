@@ -188,6 +188,10 @@ void gpio_debug_print(void);
 void __init lge_add_qfprom_devices(void);
 #endif
 
+#ifdef CONFIG_LGE_PM_BATTERY_ID_CHECKER
+void __init lge_battery_id_devices(void);
+#endif
+
 #ifdef CONFIG_LGE_KSWITCH
 #define LGE_KSWITCH_UART_DISABLE     0x1 << 3
 int lge_get_kswitch_status(void);

@@ -10,26 +10,13 @@
  * GNU General Public License for more details.
  */
 
+/include/ "msm8974pro-g3.dtsi"
+/include/ "msm8974pro-g3-wcnss-nfc.dtsi"
+
 &soc {
-	maxim_detic:maxim_max1462x {
-			status = "ok";
-			revision = "evb1...evb2";
-	};
-
 	i2c@f9967000 {
-		maxim_max14688@15 {
+		pn547@28 {
 			status = "ok";
-			revision = "rev_a...";
 		};
-		cs35l32@40 {
-			status = "ok";
-			revision = "rev_a...";
-		};
-	};
-
-	tpa_amp:ti_tpa2015d1 {
-		status = "ok";
-		revision = "evb1...evb2";
 	};
 };
-

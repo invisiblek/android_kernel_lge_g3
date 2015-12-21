@@ -38,6 +38,11 @@
 #include <linux/reboot.h>
 #include <linux/switch.h>
 #include <linux/qpnp-misc.h>
+#ifdef CONFIG_MACH_MSM8974_G3
+#include <linux/completion.h>
+#include <linux/kthread.h>
+#include <linux/timer.h>
+#endif
 
 #define I2C_SUSPEND_WORKAROUND
 #ifdef CONFIG_CHARGER_UNIFIED_WLC
@@ -224,6 +229,32 @@ static const char * const bq24296_chg_status[] = {
 #define NULL_CHECK_VOID(p) if (!(p)) { pr_err("FATAL (%s)\n", __func__); return; }
 #define NULL_CHECK(p, err) if (!(p)) { pr_err("FATAL (%s)\n", __func__); return err; }
 
+#ifdef CONFIG_MACH_MSM8974_G3
+/* WTF IS A PHIHONG ???? */
+typedef enum {
+	PHIHONG_PLUG_OUT,
+	PHIHONG_NOT_VERIFIED,
+	PHIHONG_VERIFYING,
+	PHIHONG_VERIFYING_PLUG_OUT,
+	PHIHONG_YES,
+	PHIHONG_PERMANENT_YES,
+	PHIHONG_NO,
+	PHIHONG_NO_NEED,
+	PHIHONG_STATUS_MAX,
+} phihong_status;
+#define CHECK_PHIHONG(_chip)                                            \
+	({                                                              \
+		int ret = 0;                                            \
+		if (_chip->phihong == PHIHONG_VERIFYING ||              \
+			_chip->phihong == PHIHONG_VERIFYING_PLUG_OUT || \
+			_chip->phihong == PHIHONG_YES ||                \
+			_chip->phihong == PHIHONG_PERMANENT_YES) {      \
+			ret = 1;                                        \
+		}                                                       \
+		ret;                                                    \
+	})
+#endif
+
 #ifdef CONFIG_MACH_MSM8974_G3_VZW
 typedef enum vzw_chg_state {
 	VZW_NO_CHARGER,
@@ -315,6 +346,13 @@ struct bq24296_chip {
 	bool batt_present;
 #ifdef CONFIG_LGE_PM_LLK_MODE
 	bool store_demo_enabled;
+#endif
+#ifdef CONFIG_MACH_MSM8974_G3
+	struct timer_list phihong_timer;
+	int pre_input_current_ma;
+	phihong_status phihong;
+	struct task_struct *phihong_task;
+	struct completion phihong_complete;
 #endif
 #ifdef CONFIG_CHARGER_UNIFIED_WLC
 	bool	wlc_otg;
@@ -1162,6 +1200,114 @@ out:
 	mutex_unlock(&chip->usbin_lock);
 }
 
+#ifdef CONFIG_MACH_MSM8974_G3
+/* still dunno wtf a phihong is...whatever... */
+static void phihong_timer_func_finish(unsigned long data)
+{
+	struct bq24296_chip *chip = (struct bq24296_chip *)data;
+	if (chip->phihong == PHIHONG_YES) {
+		pr_info("phihong detected!!!!\n");
+	} else if (chip->phihong == PHIHONG_PERMANENT_YES) {
+		pr_info("phihong activated!!!!\n");
+	} else if (chip->usb_present) {
+		chip->phihong = PHIHONG_NO;
+	} else {
+		chip->phihong = PHIHONG_PLUG_OUT;
+	}
+	complete(&chip->phihong_complete);
+}
+
+static void phihong_timer_func_start(unsigned long data)
+{
+	struct bq24296_chip *chip = (struct bq24296_chip *)data;
+	chip->phihong = PHIHONG_VERIFYING;
+	chip->phihong_timer.expires = jiffies + 4 * HZ;
+	chip->phihong_timer.function = phihong_timer_func_finish;
+	add_timer(&chip->phihong_timer);
+	complete(&chip->phihong_complete);
+	power_supply_changed(chip->psy_this);
+}
+
+static void trig_phihong_timer(struct bq24296_chip *chip)
+{
+	static int usb_present;
+
+	usb_present = bq24296_is_charger_present(chip);
+	del_timer(&chip->phihong_timer);
+	if ((!usb_present && chip->phihong == PHIHONG_NOT_VERIFIED) ||
+			chip->phihong == PHIHONG_PERMANENT_YES ||
+			chip->phihong == PHIHONG_NO) {
+		phihong_timer_func_finish((unsigned long) chip);
+		return;
+	}
+	chip->phihong_timer.expires = jiffies + 10 * HZ;
+	chip->phihong_timer.function = phihong_timer_func_start;
+	add_timer(&chip->phihong_timer);
+}
+
+static void cancel_phihong_timer(struct bq24296_chip *chip)
+{
+	del_timer(&chip->phihong_timer);
+}
+
+static __ref int do_phihong_checker(void *data)
+{
+	struct bq24296_chip *chip = (struct bq24296_chip *)data;
+	static int count = 0;
+	static int usb_present;
+	while (!kthread_should_stop()) {
+		wait_for_completion(&chip->phihong_complete);
+		INIT_COMPLETION(chip->phihong_complete);
+		usb_present = bq24296_is_charger_present(chip);
+		switch (chip->phihong) {
+		case PHIHONG_PLUG_OUT:
+			count = 0;
+			if (usb_present) {
+				chip->phihong = PHIHONG_NOT_VERIFIED;
+				trig_phihong_timer(chip);
+			} else {
+				cancel_phihong_timer(chip);
+			}
+			break;
+		case PHIHONG_VERIFYING:
+			if (!usb_present)
+				chip->phihong = PHIHONG_VERIFYING_PLUG_OUT;
+			break;
+		case PHIHONG_VERIFYING_PLUG_OUT:
+			if (usb_present)
+				chip->phihong = PHIHONG_YES;
+			break;
+		case PHIHONG_YES:
+			if (!usb_present) {
+				chip->phihong = PHIHONG_PLUG_OUT;
+			} else {
+				if (count >= 3) {
+					chip->phihong = PHIHONG_PERMANENT_YES;
+				} else {
+					trig_phihong_timer(chip);
+					count++;
+				}
+			}
+			break;
+		case PHIHONG_PERMANENT_YES:
+		case PHIHONG_NO:
+		case PHIHONG_NO_NEED:
+		case PHIHONG_NOT_VERIFIED:
+			if (!usb_present) {
+				chip->phihong = PHIHONG_PLUG_OUT;
+			}
+			break;
+		default:
+			chip->phihong = PHIHONG_PLUG_OUT;
+			count = 0;
+			break;
+		}
+		pr_debug("phihong = %d <<<<\n", chip->phihong);
+	}
+	return 0;
+}
+#endif
+
 static void bq24296_irq_worker(struct work_struct *work)
 {
 	struct bq24296_chip *chip =
@@ -1255,6 +1401,9 @@ static void bq24296_irq_worker(struct work_struct *work)
 			cancel_delayed_work(&chip->slow_charging_check_work);
 		}
 		chip->retry_count = 0;
+#endif
+#ifdef CONFIG_MACH_MSM8974_G3
+		complete(&chip->phihong_complete);
 #endif
 #ifdef CONFIG_ZERO_WAIT
 		zw_psy_irq_handler(usb_present);
@@ -1875,6 +2024,42 @@ bq24296_batt_power_property_is_writeable(struct power_supply *psy,
 	return 0;
 }
 
+#ifdef CONFIG_MACH_MSM8974_G3
+static void bq24296_set_phihong_current(struct bq24296_chip *chip, int ma)
+{
+#ifdef CONFIG_CHARGER_UNIFIED_WLC
+	union power_supply_propval wlc_ret = {0,};
+	if (wireless_charging) {
+		bq24296_charger_psy_getprop_event(chip, wlc_psy,
+			WIRELESS_ONLINE, &wlc_ret, _WIRELESS_);
+		if (wlc_ret.intval) {
+			ma = INPUT_CURRENT_LIMIT_WLC;
+			pr_info("[WLC] Change dwc3 result to %dmA\n", ma);
+		}
+	}
+#endif
+	switch (chip->phihong) {
+	case PHIHONG_PLUG_OUT:
+	case PHIHONG_NOT_VERIFIED:
+	case PHIHONG_VERIFYING_PLUG_OUT:
+	case PHIHONG_YES:
+	case PHIHONG_PERMANENT_YES:
+		if (chip->pre_input_current_ma < ma)
+			bq24296_charger_psy_setprop(chip, psy_this,
+				INPUT_CURRENT_MAX, chip->pre_input_current_ma);
+		else
+			bq24296_charger_psy_setprop(chip, psy_this,
+				INPUT_CURRENT_MAX, ma);
+		break;
+	case PHIHONG_VERIFYING:
+	default:
+		bq24296_charger_psy_setprop(chip, psy_this, INPUT_CURRENT_MAX,
+			ma);
+		break;
+	}
+}
+#endif
+
 #ifdef CONFIG_CHARGER_UNIFIED_WLC
 static void bq24296_wlc_otg_fake_proc(struct bq24296_chip *chip)
 {
@@ -2132,21 +2317,25 @@ static void bq24296_batt_external_power_changed(struct power_supply *psy)
 	ret.intval = ret.intval / 1000; /* dwc3 treats uA */
 	pr_info("dwc3 result=%dmA\n", ret.intval);
 
-#ifdef CONFIG_CHARGER_UNIFIED_WLC
-	if (wireless_charging) {
-		bq24296_charger_psy_getprop_event(chip, wlc_psy,
-			WIRELESS_ONLINE, &wlc_ret, _WIRELESS_);
-		if (wlc_ret.intval) {
-			ret.intval = INPUT_CURRENT_LIMIT_WLC;
-			pr_info("[WLC] Change dwc3 result to %dmA\n", ret.intval);
-		}
+#ifdef CONFIG_MACH_MSM8974_G3
+	complete(&chip->phihong_complete);
+	bq24296_set_phihong_current(chip, ret.intval);
+	chip->batt_psy.get_property(&chip->batt_psy,
+			POWER_SUPPLY_PROP_USB_CURRENT_MAX_MODE, &ret);
+	usb_current_max_enabled = ret.intval;
+	/* For MST, boost current up over 900mA in spite of USB */
+	if ((safety_timer_enabled == 0 || usb_current_max_enabled) && ret.intval < 900) {
+		ret.intval = 900;
+		bq24296_charger_psy_setprop(chip, psy_this, INPUT_CURRENT_MAX, ret.intval);
+		pr_info("safety timer disabled.... input current limit = %d\n",ret.intval);
 	}
-#endif
+#else
 	/* For MST, boost current up over 900mA in spite of USB */
 	if (pseudo_batt_info.mode && ret.intval < 900)
 		ret.intval = 900;
 
 	bq24296_charger_psy_setprop(chip, psy_this, INPUT_CURRENT_MAX, ret.intval);
+#endif
 	bq24296_charger_psy_setprop(chip, psy_this, CURRENT_MAX, chip->chg_current_ma);
 
 	chip->usb_psy = _psy_check_ext(chip->usb_psy, _USB_);
@@ -2221,6 +2410,12 @@ static int bq24296_power_get_property(struct power_supply *psy,
 		bq24296_get_input_i_limit(chip, &val->intval);
 		break;
 	case POWER_SUPPLY_PROP_PRESENT:
+#ifdef CONFIG_MACH_MSM8974_G3
+		if (CHECK_PHIHONG(chip)) {
+			val->intval = 1;
+			break;
+		}
+#endif
 		val->intval = bq24296_is_charger_present(chip);
 		break;
 	case POWER_SUPPLY_PROP_ONLINE:
@@ -2996,6 +3191,16 @@ static int bq24296_parse_dt(struct device_node *dev_node,
 		pr_err("Unable to read chg-current-ma.\n");
 		return ret;
 	}
+#ifdef CONFIG_MACH_MSM8974_G3
+	ret = of_property_read_u32(dev_node, "ti,pre-input-current-ma",
+				   &(chip->pre_input_current_ma));
+	pr_debug("bq24296 pre_input_current-ma = %d.\n",
+				chip->pre_input_current_ma);
+	if (ret) {
+		pr_err("Unable to read pre-fastchg-current-ma. Set 0.\n");
+		chip->pre_input_current_ma = 1000;
+	}
+#endif
 	ret = of_property_read_u32(dev_node, "ti,term-current-ma",
 				   &(chip->term_current_ma));
 	pr_debug("bq24296 term_current_ma = %d.\n",
@@ -3113,6 +3318,10 @@ static int bq24296_probe(struct i2c_client *client,
 	chip->batt_present = true;
 #ifdef CONFIG_MACH_MSM8974_G3_VZW
 	chip->vzw_chg_mode = VZW_NO_CHARGER;
+#endif
+#ifdef CONFIG_MACH_MSM8974_G3
+	chip->phihong = PHIHONG_NOT_VERIFIED;
+	init_completion(&chip->phihong_complete);
 #endif
 #ifdef CONFIG_LGE_CURRENTNOW
 	chip->cn_psy = power_supply_get_by_name("cn");
@@ -3394,6 +3603,18 @@ static int bq24296_probe(struct i2c_client *client,
 	ret = zw_psy_wakeup_source_register(&chip->chg_wake_lock.ws);
 	if (ret < 0)
 		goto err_zw_ws_register;
+#endif
+#ifdef CONFIG_MACH_MSM8974_G3
+	init_timer(&chip->phihong_timer);
+	chip->phihong_timer.data = (unsigned long) chip;
+	trig_phihong_timer(chip);
+
+	chip->phihong_task = kthread_run(do_phihong_checker, chip,
+			"bq24296:phihong_checker");
+	if (IS_ERR(chip->phihong_task)) {
+		pr_err("Fail to create phihong detector thread");
+		goto probe_fail;
+	}
 #endif
 	if (ret)
 		goto probe_fail;

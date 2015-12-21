@@ -2681,6 +2681,13 @@ static int max77819_charger_ac_get_property(struct power_supply *psy,
 	int rc = 0;
 	int value;
 
+#ifdef CONFIG_MACH_MSM8974_G3
+	if (psp == POWER_SUPPLY_PROP_CYCLE_COUNT) {
+		val->intval = 0;
+		goto out;
+	}
+#endif
+
 	__lock(me);
 
 	rc = max77819_charger_update(me);

@@ -310,17 +310,7 @@ int lge_pm_get_cable_info(struct qpnp_vadc_chip *vadc,
 	}
 
 	for (i = 0; i < count; i++) {
-		/* LIMIT: Include ONLY A1, B1, Vu3, Z models used MSM8974 AA/AB */
-#ifdef CONFIG_ADC_READY_CHECK_JB
-		rc = qpnp_vadc_is_ready();
-		if (rc) {
-			printk(KERN_INFO "%s is skipped once\n", __func__);
-			continue;
-		}
-		rc = qpnp_vadc_read_lge(LR_MUX10_USB_ID_LV, &result);
-#else
 		rc = qpnp_vadc_read(vadc, LR_MUX10_USB_ID_LV, &result);
-#endif
 		if (rc < 0) {
 			if (rc == -ETIMEDOUT) {
 				/* reason: adc read timeout,

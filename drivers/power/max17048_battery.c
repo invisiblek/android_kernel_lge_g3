@@ -596,18 +596,6 @@ static void max17048_work(struct work_struct *work)
 	}
 #endif
 
-#ifdef CONFIG_VZW_LLK
-	if (external_smb349_is_charger_present()) {
-		if (chip->capacity_level == 35) {
-			vzw_llk_smb349_enable_charging(0);
-			printk(KERN_INFO "%s : VZW LLK Charging Stop!!\n", __func__);
-		} else if (chip->capacity_level == 30) {
-			vzw_llk_smb349_enable_charging(1);
-			printk(KERN_INFO "%s : VZW LLK Charging Enable!!\n", __func__);
-		}
-	}
-#endif
-
 #ifdef CONFIG_MAX17048_SOC_ALERT
 	enable_irq(gpio_to_irq(chip->model_data->alert_gpio));
 #else

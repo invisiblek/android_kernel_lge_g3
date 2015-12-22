@@ -16,6 +16,8 @@
 #include <linux/types.h>
 #include <linux/string.h>
 #include <linux/init.h>
+#include <linux/linkage.h>
+#include <linux/dynamic_debug.h>
 #include <linux/printk.h>
 
 #ifndef CONFIG_DECOMPRESS_GZIP

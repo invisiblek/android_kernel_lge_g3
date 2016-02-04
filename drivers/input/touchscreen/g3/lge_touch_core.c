@@ -2989,19 +2989,34 @@ static int touch_resume(struct device *dev)
 }
 
 #ifdef CONFIG_FB
+int old_status;
 static int fb_notifier_callback(struct notifier_block *self,
 	unsigned long event, void *data)
 {
 	struct fb_event *evdata = (struct fb_event*)data;
 	struct lge_touch_data *ts =
 		container_of(self, struct lge_touch_data, fb_notif);
+	int new_status;
 
 	if (evdata && evdata->data && event == FB_EVENT_BLANK) {
 		int *blank = (int *)evdata->data;
-		if (*blank == FB_BLANK_UNBLANK)
-			touch_resume(&ts->client->dev);
-		else if (*blank == FB_BLANK_POWERDOWN)
-			touch_suspend(&ts->client->dev);
+		switch (*blank) {
+			case FB_BLANK_UNBLANK:
+			case FB_BLANK_NORMAL:
+			case FB_BLANK_VSYNC_SUSPEND:
+			case FB_BLANK_HSYNC_SUSPEND:
+				new_status = 1;
+				break;
+			case FB_BLANK_POWERDOWN:
+			default:
+				new_status = 0;
+		}
+
+		if (new_status != old_status) {
+			new_status ? touch_resume(&ts->client->dev) :
+				     touch_suspend(&ts->client->dev);
+			old_status = new_status;
+		}
 	}
 
 	return 0;
